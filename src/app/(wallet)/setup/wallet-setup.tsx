@@ -1,21 +1,24 @@
-import { useState } from "react";
-import { SafeAreaView } from "react-native";
-import { useDispatch } from "react-redux";
+import React, { useState, useEffect } from "react";
+import { SafeAreaView, Alert } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { View } from "moti";
 import styled, { useTheme } from "styled-components/native";
+import * as LocalAuthentication from 'expo-local-authentication';
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
 import Button from "../../../components/Button/Button";
 import { ThemeType } from "../../../styles/theme";
 import { saveEthereumAddresses } from "../../../store/ethereumSlice";
 import { saveSolanaAddresses } from "../../../store/solanaSlice";
+import { authenticate, isAuthEnrolled } from "../../../store/biometricsSlice";
 import type { AddressState } from "../../../store/types";
 import { GeneralStatus } from "../../../store/types";
 import { ROUTES } from "../../../constants/routes";
 import WalletIcon from "../../../assets/svg/wallet.svg";
 import { LinearGradientBackground } from "../../../components/Styles/Gradient";
+import { RootState } from "../../../store";
 
 const SafeAreaContainer = styled(SafeAreaView)<{ theme: ThemeType }>`
   flex: 1;
@@ -80,14 +83,56 @@ const SecondaryButtonText = styled.Text<{ theme: ThemeType }>`
   color: ${(props) => props.theme.fonts.colors.primary};
 `;
 
+
+
+
 export default function WalletSetup() {
   const theme = useTheme();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const { isEnrolled, biometricsEnabled } = useSelector((state: RootState) => state.biometrics);
+
+  useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setIsBiometricSupported(compatible);
+
+      if (compatible) {
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        dispatch(isAuthEnrolled());
+        if (!enrolled) {
+          Alert.alert(
+            'Biometric Record Not Found',
+            'Please set up fingerprint or face recognition on your device for enhanced security.',
+            [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+          );
+        }
+      }
+    })();
+  }, [dispatch]);
+
+  const handleBiometricAuth = async () => {
+    const biometricAuth = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Authenticate to create your wallet',
+      disableDeviceFallback: false,
+      cancelLabel: 'Cancel'
+    });
+    return biometricAuth.success;
+  };
 
   const walletSetup = async () => {
     setLoading(true);
     try {
+      if (isBiometricSupported && isEnrolled) {
+        const authResult = await handleBiometricAuth();
+        if (!authResult) {
+          console.error("Biometric authentication failed");
+          setLoading(false);
+          return;
+        }
+      }
+
       const ethWallet = await ethService.createWallet();
       const masterMnemonicPhrase = ethWallet.mnemonic.phrase;
       const solWallet = await solanaService.restoreWalletFromPhrase(
@@ -133,10 +178,12 @@ export default function WalletSetup() {
       });
     } catch (err) {
       console.error("Failed to create wallet", err);
+      Alert.alert("Error", "Failed to create wallet. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <LinearGradientBackground colors={theme.colors.primaryLinearGradient}>
       <SafeAreaContainer>
@@ -170,6 +217,11 @@ export default function WalletSetup() {
           </TextContainer>
         </ContentContainer>
         <ButtonContainer>
+          {isBiometricSupported && isEnrolled && (
+            <Subtitle style={{ marginBottom: 10, textAlign: 'center' }}>
+              Fingerprint authentication will be required to set up your wallet.
+            </Subtitle>
+          )}
           <Button
             linearGradient={theme.colors.secondaryLinearGradient}
             loading={loading}
