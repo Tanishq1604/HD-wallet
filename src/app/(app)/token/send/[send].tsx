@@ -1,10 +1,11 @@
-import { useState, ChangeEvent, useRef } from "react";
-import { Platform } from "react-native";
+import { useState, ChangeEvent, useRef, useEffect } from "react";
+import { Platform, Alert } from "react-native";
 import { useSelector } from "react-redux";
 import { router, useLocalSearchParams } from "expo-router";
 import styled, { useTheme } from "styled-components/native";
 import { Formik, FormikProps } from "formik";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import * as LocalAuthentication from 'expo-local-authentication';
 import { ThemeType } from "../../../../styles/theme";
 import { TICKERS } from "../../../../constants/tickers";
 import { ROUTES } from "../../../../constants/routes";
@@ -37,7 +38,7 @@ const ContentContainer = styled.View<{ theme: ThemeType }>`
   justify-content: flex-start;
   padding: ${(props) => props.theme.spacing.medium};
   margin-top: ${(props) =>
-    Platform.OS === "android" && props.theme.spacing.huge};
+    Platform.OS === "android" ? props.theme.spacing.huge : '0'};
 `;
 
 const IconView = styled.View<{ theme: ThemeType }>`
@@ -159,6 +160,7 @@ interface FormValues {
   address: string;
   amount: string;
 }
+
 export default function SendPage() {
   const { send, toAddress } = useLocalSearchParams();
   const theme = useTheme();
@@ -186,6 +188,23 @@ export default function SendPage() {
 
   const [isAddressInputFocused, setIsAddressInputFocused] = useState(false);
   const [isAmountInputFocused, setIsAmountInputFocused] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setIsBiometricSupported(compatible);
+    })();
+  }, []);
+
+  const handleBiometricAuth = async () => {
+    const biometricAuth = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Authenticate to send transaction',
+      disableDeviceFallback: false,
+      cancelLabel: 'Cancel'
+    });
+    return biometricAuth.success;
+  };
 
   const renderIcons = () => {
     switch (chainName) {
@@ -337,6 +356,14 @@ export default function SendPage() {
   };
 
   const handleSubmit = async (values: { address: string; amount: string }) => {
+    if (isBiometricSupported) {
+      const authResult = await handleBiometricAuth();
+      if (!authResult) {
+        Alert.alert("Authentication Failed", "Biometric authentication is required to proceed with the transaction.");
+        return;
+      }
+    }
+
     router.push({
       pathname: ROUTES.sendConfirmation,
       params: {
@@ -439,7 +466,7 @@ export default function SendPage() {
                   <Button
                     backgroundColor={theme.colors.primary}
                     onPress={handleSubmit}
-                    title="Next"
+                    title={isBiometricSupported ? "Authenticate & Send" : "Send"}
                   />
                 </ButtonContainer>
               </ButtonView>
