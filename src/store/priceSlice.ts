@@ -28,6 +28,9 @@ export interface CryptoPrices {
   solana: {
     usd: number;
   };
+  neo: {  // Add neo here
+    usd: number;
+  };
 }
 
 export interface PriceState {
@@ -42,6 +45,9 @@ const initialState = {
       usd: 0,
     },
     solana: {
+      usd: 0,
+    },
+    neo: {  // Add neo initialization here
       usd: 0,
     },
   },

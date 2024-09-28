@@ -1,6 +1,5 @@
 import "react-native-get-random-values";
 import "@ethersproject/shims";
-
 import { combineReducers } from "redux";
 import {
   configureStore,
@@ -16,6 +15,7 @@ import ethereumReducer from "./ethereumSlice";
 import solanaReducer from "./solanaSlice";
 import priceReduce from "./priceSlice";
 import biometricsReducer from "./biometricsSlice";
+import neoReducer from "./neoSlice"; // Add this line
 import { formatEther } from "ethers";
 import ethService from "../services/EthereumService";
 
@@ -29,6 +29,7 @@ const rootReducer = combineReducers({
   solana: solanaReducer,
   price: priceReduce,
   biometrics: biometricsReducer,
+  neo: neoReducer, // Add this line
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

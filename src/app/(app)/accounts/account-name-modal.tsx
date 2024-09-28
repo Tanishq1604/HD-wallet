@@ -8,6 +8,7 @@ import type { RootState } from "../../../store";
 import type { AddressState } from "../../../store/types";
 import { updateAccountName } from "../../../store/ethereumSlice";
 import { updateSolanaAccountName } from "../../../store/solanaSlice";
+import { updateNeoAccountName } from "../../../store/neoSlice";
 import { SafeAreaContainer } from "../../../components/Styles/Layout.styles";
 import {
   ErrorText,
@@ -39,7 +40,7 @@ const AccountInput = styled.TextInput<{
 const AccountsNameModal = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { ethAddress, solAddress } = useLocalSearchParams();
+  const { ethAddress, solAddress,neoAddress } = useLocalSearchParams();
 
   const ethereumAccount = useSelector((state: RootState) =>
     state.ethereum.addresses.find(
@@ -49,6 +50,11 @@ const AccountsNameModal = () => {
   const solanaAccount = useSelector((state: RootState) =>
     state.solana.addresses.find(
       (item: AddressState) => item.address === solAddress
+    )
+  );
+  const neoAccount = useSelector((state: RootState) =>
+    state.neo.addresses.find(
+      (item: AddressState) => item.address === neoAddress
     )
   );
   const name = ethereumAccount.accountName ?? solanaAccount.accountName;
@@ -66,6 +72,12 @@ const AccountsNameModal = () => {
       updateSolanaAccountName({
         accountName: accountNameValue,
         solAddress: solanaAccount.address,
+      })
+    );
+    dispatch(
+      updateAccountName({
+        accountName: accountNameValue,
+        ethAddress: ethereumAccount.address,
       })
     );
     dispatch(

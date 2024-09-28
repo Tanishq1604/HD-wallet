@@ -21,6 +21,12 @@ import {
   fetchSolanaTransactionsInterval,
   fetchSolanaBalanceInterval,
 } from "../../store/solanaSlice";
+import {
+  fetchNeoBalance,
+  fetchNeoTransactions,
+  fetchNeoTransactionsInterval,
+  fetchNeoBalanceInterval,
+} from "../../store/neoSlice";
 import { useLoadingState } from "../../hooks/redux";
 import { GeneralStatus } from "../../store/types";
 import { capitalizeFirstLetter } from "../../utils/capitalizeFirstLetter";
@@ -34,6 +40,7 @@ import ReceiveIcon from "../../assets/svg/receive.svg";
 import CryptoInfoCard from "../../components/CryptoInfoCard/CryptoInfoCard";
 import CryptoInfoCardSkeleton from "../../components/CryptoInfoCard/CryptoInfoCardSkeleton";
 import SolanaIcon from "../../assets/svg/solana.svg";
+import NeoIcon from "../../assets/svg/solana.svg";
 import EthereumPlainIcon from "../../assets/svg/ethereum_plain.svg";
 import EthereumIcon from "../../assets/svg/ethereum.svg";
 import { FETCH_PRICES_INTERVAL } from "../../constants/price";
@@ -160,6 +167,15 @@ export default function Index() {
   const solBalance = useSelector(
     (state: RootState) => state.solana.addresses[activeSolIndex].balance
   );
+  const activeNeoIndex = useSelector(
+    (state: RootState) => state.neo.activeIndex
+  );
+  const neoWalletAddress = useSelector(
+    (state: RootState) => state.neo.addresses[activeNeoIndex].address
+  );
+  const neoBalance = useSelector(
+    (state: RootState) => state.neo.addresses[activeNeoIndex].balance
+  );
 
   const solTransactions = useSelector(
     (state: RootState) =>
@@ -169,17 +185,27 @@ export default function Index() {
     (state: RootState) =>
       state.solana.addresses[activeSolIndex].status === GeneralStatus.Failed
   );
+  const neoTransactions = useSelector(
+    (state: RootState) =>
+      state.neo.addresses[activeNeoIndex].transactionMetadata.transactions
+  );
+  const failedneoStatus = useSelector(
+    (state: RootState) =>
+      state.neo.addresses[activeNeoIndex].status === GeneralStatus.Failed
+  );
 
   const snapPoints = useMemo(() => ["10%", "33%", "69%", "88%"], []);
 
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices?.solana?.usd;
   const ethPrice = prices?.ethereum?.usd;
+  const neoPrice = prices?.neo?.usd;
 
   const [refreshing, setRefreshing] = useState(false);
   const [usdBalance, setUsdBalance] = useState(0);
   const [solUsd, setSolUsd] = useState(0);
   const [ethUsd, setEthUsd] = useState(0);
+  const [neoUsd, setNeoUsd] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [bottomSheetIndex, setBottomSheetIndex, bottomSheetIndexLoading] =
     useStorage(SNAP_POINTS);
@@ -192,7 +218,7 @@ export default function Index() {
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
-  }, [dispatch, solWalletAddress, ethWalletAddress]);
+  }, [dispatch, solWalletAddress, ethWalletAddress,neoWalletAddress]);
 
   const fetchTokenBalances = useCallback(async () => {
     if (ethWalletAddress) {
@@ -201,8 +227,10 @@ export default function Index() {
 
     if (solWalletAddress) {
       dispatch(fetchSolanaBalance(solWalletAddress));
+    }if (neoWalletAddress) {
+      dispatch(fetchNeoBalance(neoWalletAddress));
     }
-  }, [ethBalance, solBalance, dispatch]);
+  }, [ethBalance, solBalance,neoBalance, dispatch]);
 
   const fetchTokenBalancesInterval = useCallback(async () => {
     if (ethWalletAddress) {
@@ -212,16 +240,20 @@ export default function Index() {
     if (solWalletAddress) {
       dispatch(fetchSolanaBalanceInterval(solWalletAddress));
     }
-  }, [ethBalance, solBalance, dispatch]);
+    if (neoWalletAddress) {
+      dispatch(fetchNeoBalanceInterval(neoWalletAddress));
+    }
+  }, [ethBalance, solBalance,neoBalance, dispatch]);
 
   const updatePrices = () => {
     if (ethWalletAddress && solWalletAddress) {
       const ethUsd = ethPrice * ethBalance;
       const solUsd = solPrice * solBalance;
-
-      setUsdBalance(ethUsd + solUsd);
+      const neoUsd = neoPrice * neoBalance;
+      setUsdBalance(ethUsd + solUsd+neoUsd);
       setEthUsd(ethUsd);
       setSolUsd(solUsd);
+      setNeoUsd(neoUsd);
     }
   };
 
@@ -233,8 +265,10 @@ export default function Index() {
     let url: string;
     if (asset.toLowerCase() === TICKERS.ethereum.toLowerCase()) {
       url = `https://sepolia.etherscan.io/tx/${hash}`;
-    } else {
+    } else if (asset.toLowerCase() === TICKERS.solana.toLowerCase()) {
       url = `https://explorer.solana.com/?cluster=testnet/tx/${hash}`;
+    } else {
+      url = 'https://xt4scan.ngd.network/';
     }
     return url;
   };
@@ -246,7 +280,8 @@ export default function Index() {
     const isSolana = item.asset.toLowerCase() === TICKERS.solana.toLowerCase();
     const isEthereum =
       item.asset.toLowerCase() === TICKERS.ethereum.toLowerCase();
-    const Icon = isSolana ? SolanaIcon : EthereumPlainIcon;
+    const isNeo = item.asset.toLowerCase() === TICKERS.neo.toLowerCase();
+    const Icon = isSolana ? SolanaIcon  : isEthereum ? EthereumIcon : NeoIcon;
     const sign = item.direction === "received" ? "+" : "-";
     if (isSolana) {
       const caption =
@@ -283,16 +318,36 @@ export default function Index() {
         />
       );
     }
+    if (isNeo) {
+      const caption =
+        item.direction === "received"
+          ? `from ${truncateWalletAddress(item.from)}`
+          : `To ${truncateWalletAddress(item.to)}`;
+      return (
+        <CryptoInfoCard
+          onPress={() =>
+            _handlePressButtonAsync(urlBuilder(item.hash, item.asset))
+          }
+          title={capitalizeFirstLetter(item.direction)}
+          caption={caption}
+          details={`${sign} ${item.value} ${item.asset}`}
+          icon={<Icon width={35} height={35} fill={theme.colors.white} />}
+        />
+      );
+    }
   };
 
   const fetchTransactions = async () => {
     dispatch(fetchEthereumTransactions({ address: ethWalletAddress }));
     dispatch(fetchSolanaTransactions(solWalletAddress));
+    dispatch(fetchNeoTransactions({ address: neoWalletAddress }));
   };
 
   const fetchTransactionsInterval = async () => {
     dispatch(fetchEthereumTransactionsInterval({ address: ethWalletAddress }));
     dispatch(fetchSolanaTransactionsInterval(solWalletAddress));
+    dispatch(fetchNeoTransactionsInterval({ address: neoWalletAddress }));
+
   };
 
   const fetchBalanceAndPrice = async () => {
@@ -471,6 +526,16 @@ export default function Index() {
                   onPress={() => router.push(ROUTES.solDetails)}
                   title="Solana"
                   caption={`${solBalance} SOL`}
+                  details={formatDollar(solUsd)}
+                  icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
+                  hideBackground
+                />
+              </CardView>
+              <CardView>
+                <CryptoInfoCard
+                  onPress={() => router.push(ROUTES.solDetails)}
+                  title="Neo"
+                  caption={`${solBalance} GAS`}
                   details={formatDollar(solUsd)}
                   icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
                   hideBackground

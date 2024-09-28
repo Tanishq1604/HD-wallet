@@ -50,6 +50,9 @@ export default function AppLayout() {
   const solActiveIndex = useSelector(
     (state: RootState) => state.solana.activeIndex ?? 0
   );
+  const neoActiveIndex = useSelector(
+    (state: RootState) => state.neo.activeIndex ?? 0
+  );
   const ethWallet = useSelector(
     (state: RootState) =>
       state.ethereum.addresses[ethActiveIndex]?.address ?? ""
@@ -57,6 +60,9 @@ export default function AppLayout() {
 
   const solWallet = useSelector(
     (state: RootState) => state.solana.addresses[solActiveIndex]?.address ?? ""
+  );
+  const neoWallet = useSelector(
+    (state: RootState) => state.neo.addresses[solActiveIndex]?.address ?? ""
   );
   const [appReady, setAppReady] = useState<boolean>(false);
   const [userExists, setUserExists] = useState<boolean>(false);

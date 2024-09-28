@@ -10,6 +10,7 @@ import { debounce } from "lodash";
 import { formatDollar } from "../../../utils/formatDollars";
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
+import neoService from "../../../services/NeoService";
 import { getPhrase } from "../../../hooks/useStorageState";
 import type { RootState } from "../../../store";
 import type { AddressState } from "../../../store/types";
@@ -23,6 +24,10 @@ import {
   setActiveSolanaAccount,
   updateSolanaAddresses,
 } from "../../../store/solanaSlice";
+import {
+  setActiveNeoAccount,
+  updateNeoAddresses,
+} from "../../../store/neoSlice";
 import { ROUTES } from "../../../constants/routes";
 import RightArrowIcon from "../../../assets/svg/right-arrow.svg";
 import PhraseIcon from "../../../assets/svg/phrase.svg";
@@ -142,12 +147,14 @@ interface WalletPairs {
   walletDetails: {
     ethereum: AddressState | {};
     solana: AddressState | {};
+    neo: AddressState | {};
   };
 }
 
 async function compileAddressesConcurrently(
   ethAcc: AddressState[],
-  solAcc: AddressState[]
+  solAcc: AddressState[],
+  neoAcc: AddressState[]
 ) {
   const ethereumBalancePromise = ethAcc.map(async (account: AddressState) => {
     const balance = await ethService.getBalance(account.address);
@@ -164,36 +171,48 @@ async function compileAddressesConcurrently(
       balance: balance,
     };
   });
+  const neoBalancePromise = neoAcc.map(async (account: AddressState) => {
+    const balance = await neoService.getBalance(account.address);
+    return {
+      ...account,
+      balance: balance,
+    };
+  });
 
   const ethereum = await Promise.all(ethereumBalancePromise);
   const solana = await Promise.all(solanaBalancePromise);
+  const neo = await Promise.all(neoBalancePromise);
 
   return {
     ethereum,
     solana,
+    neo
   };
 }
 
 function compileInactiveAddresses(
   ethAcc: AddressState[],
   solAcc: AddressState[],
+  neoAcc: AddressState[],
   activeEthAddress: string,
-  activeSolAddress: string
+  activeSolAddress: string,
+  activeNeoAddress: string
 ) {
   const mergedWalletPairs: WalletPairs[] = [];
-  const highestAccAmount = Math.max(ethAcc.length, solAcc.length);
+  const highestAccAmount = Math.max(ethAcc.length, solAcc.length, neoAcc.length);
 
   for (let i = 0; i < highestAccAmount; i++) {
     const isActiveAccount =
       ethAcc[i].address === activeEthAddress &&
-      solAcc[i].address === activeSolAddress;
+      solAcc[i].address === activeSolAddress && neoAcc[i].address === activeNeoAddress;
     mergedWalletPairs.push({
       id: `${i}-${ethAcc[i].address}`,
-      accountName: ethAcc[i]?.accountName || solAcc[i].accountName,
+      accountName: ethAcc[i]?.accountName || solAcc[i].accountName || neoAcc[i].accountName,
       isActiveAccount,
       walletDetails: {
         ethereum: ethAcc[i] ?? {},
         solana: solAcc[i] ?? {},
+        neo: neoAcc[i] ?? {},
       },
     });
   }
@@ -208,16 +227,23 @@ const AccountsIndex = () => {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
+  const activeNeoIndex = useSelector(
+    (state: RootState) => state.neo.activeIndex
+  );
   const activeEthAddress = useSelector(
     (state: RootState) => state.ethereum.addresses[activeEthIndex]
   );
   const activeSolAddress = useSelector(
     (state: RootState) => state.solana.addresses[activeSolIndex]
   );
+  const activeNeoAddress = useSelector(
+    (state: RootState) => state.neo.addresses[activeNeoIndex]
+  );
   const ethAccounts = useSelector(
     (state: RootState) => state.ethereum.addresses
   );
   const solAccounts = useSelector((state: RootState) => state.solana.addresses);
+  const neoAccounts = useSelector((state: RootState) => state.neo.addresses);
   const prices = useSelector((state: RootState) => state.price.data);
 
   const theme = useTheme();
@@ -231,12 +257,17 @@ const AccountsIndex = () => {
     try {
       const nextEthIndex = ethAccounts.length;
       const nextSolIndex = solAccounts.length;
+      const nextNeoIndex = neoAccounts.length;
       const phrase = await getPhrase();
       const newEthWallet = await ethService.createWalletByIndex(
         phrase,
         nextEthIndex
       );
       const newSolWallet = await solanaService.createWalletByIndex(
+        phrase,
+        nextSolIndex
+      );
+      const newNeoWallet = await neoService.createWalletByIndex(
         phrase,
         nextSolIndex
       );
@@ -269,9 +300,24 @@ const AccountsIndex = () => {
         status: GeneralStatus.Idle,
         transactionConfirmations: [],
       };
+      const transformedNeoWallet: AddressState = {
+        accountName: `Account ${nextNeoIndex + 1}`,
+        derivationPath: `m/44'/888'/0'/0'`,
+        address: newNeoWallet.address,
+        publicKey: newNeoWallet.publicKey,
+        balance: 0,
+        transactionMetadata: {
+          paginationKey: undefined,
+          transactions: [],
+        },
+        failedNetworkRequest: false,
+        status: GeneralStatus.Idle,
+        transactionConfirmations: [],
+      };
 
       dispatch(updateEthereumAddresses(transformedEthWallet));
       dispatch(updateSolanaAddresses(transformedSolWallet));
+      dispatch(updateNeoAddresses(transformedNeoWallet));
     } catch (err) {
       console.error("Failed to create new wallet pair:", err);
     } finally {
@@ -283,15 +329,17 @@ const AccountsIndex = () => {
     (index: number) => {
       dispatch(setActiveEthereumAccount(index));
       dispatch(setActiveSolanaAccount(index));
+      dispatch(setActiveNeoAccount(index));
     },
     [dispatch]
   );
 
   const calculateTotalPrice = useCallback(
-    (ethBalance: number, solBalance: number) => {
+    (ethBalance: number, solBalance: number,neoBalance: number) => {
       const ethUsd = prices.ethereum.usd * ethBalance;
       const solUsd = prices.solana.usd * solBalance;
-      return formatDollar(ethUsd + solUsd);
+      const neoUsd = prices.neo.usd * neoBalance;
+      return formatDollar(ethUsd + solUsd + neoUsd);
     },
     [prices]
   );
@@ -331,7 +379,8 @@ const AccountsIndex = () => {
 
       const balance = calculateTotalPrice(
         item.walletDetails.ethereum.balance,
-        item.walletDetails.solana.balance
+        item.walletDetails.solana.balance,
+        item.walletDetails.neo.balance
       );
       return (
         <WalletContainer
@@ -353,6 +402,7 @@ const AccountsIndex = () => {
                 params: {
                   ethAddress: item.walletDetails.ethereum.address,
                   solAddress: item.walletDetails.solana.address,
+                  neoAddress: item.walletDetails.neo.address,
                   balance,
                 },
               });
@@ -377,17 +427,20 @@ const AccountsIndex = () => {
     // Have a price and wallet section in redux. Currently
     // this causes too many re-renders
     try {
-      const { ethereum, solana } = await compileAddressesConcurrently(
+      const { ethereum, solana ,neo } = await compileAddressesConcurrently(
         ethAccounts,
-        solAccounts
+        solAccounts,
+        neoAccounts
       );
-      if (ethereum && solana) {
+      if (ethereum && solana&& neo) {
         setAccounts(
           compileInactiveAddresses(
             ethereum,
             solana,
+            // @ts-ignore
+            neo,
             activeEthAddress.address,
-            activeSolAddress.address
+            activeSolAddress.address,activeNeoAddress.address
           )
         );
       }
@@ -399,10 +452,13 @@ const AccountsIndex = () => {
   }, [
     ethAccounts,
     solAccounts,
+    neoAccounts,
     activeEthAddress,
     activeSolAddress,
+    activeNeoAddress,
     activeEthIndex,
     activeSolIndex,
+    activeNeoIndex,
   ]);
 
   const debouncedFetchBalances = useMemo(() => {

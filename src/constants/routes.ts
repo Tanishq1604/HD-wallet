@@ -13,8 +13,10 @@ export interface Routes {
   receiveOptions: string;
   ethDetails: string;
   solDetails: string;
+  neoDetails: string;
   sendEth: string;
   sendSol: string;
+  sendNeo: string;
   sendConfirmation: string;
   settings: string;
   camera: string;
@@ -39,8 +41,10 @@ export const ROUTES: Routes = {
   receiveOptions: "/token/receive/receive-options",
   ethDetails: "/token/ethereum",
   solDetails: "/token/solana",
+  neoDetails: "/token/neo",
   sendEth: "/token/send/ethereum",
   sendSol: "/token/send/solana",
+  sendNeo: "/token/send/neo",
   sendConfirmation: "/token/send/send-confirmation",
   settings: "/(app)/settings/settings-modal",
   camera: "/(app)/camera",

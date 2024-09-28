@@ -8,10 +8,12 @@ import styled, { useTheme } from "styled-components/native";
 import * as LocalAuthentication from 'expo-local-authentication';
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
+import neoService from "../../../services/NeoService";
 import Button from "../../../components/Button/Button";
 import { ThemeType } from "../../../styles/theme";
 import { saveEthereumAddresses } from "../../../store/ethereumSlice";
 import { saveSolanaAddresses } from "../../../store/solanaSlice";
+import { saveNeoAddresses } from "../../../store/neoSlice";
 import { authenticate, isAuthEnrolled } from "../../../store/biometricsSlice";
 import type { AddressState } from "../../../store/types";
 import { GeneralStatus } from "../../../store/types";
@@ -138,6 +140,7 @@ export default function WalletSetup() {
       const solWallet = await solanaService.restoreWalletFromPhrase(
         masterMnemonicPhrase
       );
+      const neoWallet = await neoService.restoreWalletFromPhrase(masterMnemonicPhrase);
 
       const ethereumAccount: AddressState = {
         accountName: "Account 1",
@@ -168,9 +171,24 @@ export default function WalletSetup() {
         status: GeneralStatus.Idle,
         transactionConfirmations: [],
       };
-
+      const neoAccount: AddressState = {
+        accountName: "Account 1",
+        derivationPath: `m/44'/888'/0'/0'`,
+        address: neoWallet.publicKey,
+        publicKey: neoWallet.publicKey,
+        balance: 0,
+        transactionMetadata: {
+          paginationKey: undefined,
+          transactions: [],
+        },
+        failedNetworkRequest: false,
+        status: GeneralStatus.Idle,
+        transactionConfirmations: [],
+      };
       dispatch(saveEthereumAddresses([ethereumAccount]));
       dispatch(saveSolanaAddresses([solanaAccount]));
+      dispatch(saveNeoAddresses([neoAccount]));
+
 
       router.push({
         pathname: ROUTES.seedPhrase,
