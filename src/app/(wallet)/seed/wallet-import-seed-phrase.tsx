@@ -7,12 +7,18 @@ import styled from "styled-components/native";
 import { useTheme } from "styled-components";
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
+import neoService from "../../../services/NeoService";
 import { ThemeType } from "../../../styles/theme";
 import {
   saveSolanaAddresses,
   fetchSolanaBalance,
   fetchSolanaTransactions,
 } from "../../../store/solanaSlice";
+import {
+  saveNeoAddresses,
+  fetchNeoBalance,
+  fetchNeoTransactions,
+} from "../../../store/neoSlice";
 import {
   saveEthereumAddresses,
   fetchEthereumBalance,
@@ -164,6 +170,9 @@ export default function Page() {
       const unusedSolIndex = await solanaService.findNextUnusedWalletIndex(
         phraseTextValue
       );
+      const unusedNeoIndex = await neoService.findNextUnusedWalletIndex(
+        phraseTextValue
+      );
 
       highestIndex = Math.max(unusedEthIndex, unusedSolIndex);
       const importedEthWallets = await ethService.importAllActiveAddresses(
@@ -171,6 +180,10 @@ export default function Page() {
       );
 
       const importedSolWallets = await solanaService.importAllActiveAddresses(
+        phraseTextValue,
+        highestIndex
+      );
+      const importedNeoWallets = await neoService.importAllActiveAddresses(
         phraseTextValue,
         highestIndex
       );
@@ -210,6 +223,23 @@ export default function Page() {
             transactionConfirmations: [],
           };
         });
+        const transformedActiveNeoAddresses: AddressState[] =
+        importedSolWallets.map((info, index) => {
+          return {
+            accountName: `Account ${index + 1}`,
+            derivationPath: info.derivationPath,
+            address: info.publicKey,
+            publicKey: info.publicKey,
+            balance: 0,
+            transactionMetadata: {
+              paginationKey: undefined,
+              transactions: [],
+            },
+            failedNetworkRequest: false,
+            status: GeneralStatus.Idle,
+            transactionConfirmations: [],
+          };
+        });
 
       await savePhrase(JSON.stringify(phraseTextValue));
 
@@ -225,6 +255,11 @@ export default function Page() {
       dispatch(fetchSolanaBalance(transformedActiveSolAddresses[0].address));
       dispatch(
         fetchSolanaTransactions(transformedActiveSolAddresses[0].address)
+      );
+      dispatch(saveNeoAddresses(transformedActiveNeoAddresses));
+      dispatch(fetchNeoBalance(transformedActiveNeoAddresses[0].address));
+      dispatch(
+        fetchNeoTransactions({address: transformedActiveNeoAddresses[0].address})
       );
 
       router.push({

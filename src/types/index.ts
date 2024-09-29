@@ -30,6 +30,7 @@ export interface ErrorResponse {
 export enum Chains {
   Ethereum = "ethereum",
   Solana = "solana",
+  Neo = "neo",
 }
 
 type BlockTime = number;

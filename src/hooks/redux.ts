@@ -12,6 +12,9 @@ export const useLoadingState = () => {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
+  const activeNeoIndex = useSelector(
+    (state: RootState) => state.neo.activeIndex
+  );
 
   const ethLoading = useSelector(
     (state: RootState) =>
@@ -21,6 +24,10 @@ export const useLoadingState = () => {
     (state: RootState) =>
       state.solana.addresses[activeSolIndex].status === GeneralStatus.Loading
   );
+  const neoLoading = useSelector(
+    (state: RootState) =>
+      state.neo.addresses[activeSolIndex].status === GeneralStatus.Loading
+  );
 
-  return ethLoading || solLoading;
+  return ethLoading || solLoading || neoLoading;
 };

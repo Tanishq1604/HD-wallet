@@ -16,10 +16,12 @@ import { capitalizeFirstLetter } from "../../../../utils/capitalizeFirstLetter";
 import Button from "../../../../components/Button/Button";
 import ethService from "../../../../services/EthereumService";
 import solanaService from "../../../../services/SolanaService";
+import neoService from "../../../../services/NeoService";
 import { getPhrase } from "../../../../hooks/useStorageState";
 import type { RootState, AppDispatch } from "../../../../store";
 import { sendEthereumTransaction } from "../../../../store/ethereumSlice";
 import { sendSolanaTransaction } from "../../../../store/solanaSlice";
+import { sendNeoTransaction } from "../../../../store/neoSlice";
 import { BalanceContainer } from "../../../../components/Styles/Layout.styles";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 import { ROUTES } from "../../../../constants/routes";
@@ -106,6 +108,9 @@ export default function SendConfirmationPage() {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
+  const activeNeoIndex = useSelector(
+    (state: RootState) => state.neo.activeIndex
+  );
   const walletAddress = useSelector(
     (state: RootState) => state[chainName].addresses[activeEthIndex].address
   );
@@ -116,6 +121,7 @@ export default function SendConfirmationPage() {
 
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
+  const neoPrice = prices.neo.usd;
 
   const [transactionFeeEstimate, setTransactionFeeEstimate] = useState("0.00");
   const [totalCost, setTotalCost] = useState("0.00");
@@ -170,6 +176,27 @@ export default function SendConfirmationPage() {
           router.push({
             pathname: ROUTES.confirmation,
             params: { txHash: result, blockchain: Chains.Solana },
+          });
+        }
+      }else if (chainName === Chains.Neo) {
+        const neoPrivateKey = await neoService.derivePrivateKeysFromPhrase(
+          seedPhrase,
+          derivationPath
+        );
+        const result = await dispatch(
+          sendNeoTransaction({
+            privateKey: neoPrivateKey,
+            toAddress: address,  // Change 'address' to 'toAddress'
+            amount,
+            assetId: '0xd2a4cff31913016155e38e474a2c06d08be276cf', // Replace with actual NEO or GAS asset ID
+          })
+        ).unwrap();
+  
+        if (result) {
+          navigation.dispatch(StackActions.popToTop());
+          router.push({
+            pathname: ROUTES.confirmation,
+            params: { txHash: result.txid, blockchain: Chains.Neo },
           });
         }
       }
@@ -241,7 +268,38 @@ export default function SendConfirmationPage() {
           setError("");
           setBtnDisabled(false);
         }
+      }else if (chainName === Chains.Neo) {
+        const networkFee = await neoService.calculateNetworkFee(address, amount);
+        const assetId = 'neo-asset-id'; // Replace with actual NEO or GAS asset ID
+        const balance = await neoService.getBalance(walletAddress);
+        const assetBalance = balance[assetId] || "0";
+  
+        // Convert network fee from satoshis to NEO
+        const networkFeeNeo = parseFloat(networkFee) / 100000000;
+        
+        const networkFeeUsd = networkFeeNeo * chainPrice;
+        const networkFeeEstimateUsd = formatDollar(networkFeeUsd);
+  
+        const amountNeo = parseFloat(amount);
+        const totalCostNeo = amountNeo + networkFeeNeo;
+        const totalCostUsd = formatDollar(totalCostNeo * chainPrice);
+  
+        if (networkFeeUsd > 0 && networkFeeUsd < 0.01) {
+          setTransactionFeeEstimate(`< ${networkFeeEstimateUsd}`);
+        } else {
+          setTransactionFeeEstimate(networkFeeEstimateUsd);
+        }
+  
+        setTotalCost(totalCostUsd);
+        const availableBalance = parseFloat(assetBalance) / 100000000; // Convert from satoshis to NEO
+      if (totalCostNeo > availableBalance) {
+        setError("Not enough funds to send transaction.");
+        setBtnDisabled(true);
+      } else {
+        setError("");
+        setBtnDisabled(false);
       }
+    }
     } catch (error) {
       console.error("Failed to fetch transaction costs:", error);
     }

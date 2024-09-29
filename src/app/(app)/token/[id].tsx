@@ -19,6 +19,12 @@ import {
   fetchSolanaTransactionsInterval,
   fetchSolanaBalanceInterval,
 } from "../../../store/solanaSlice";
+import {
+  fetchNeoBalance,
+  fetchNeoTransactions,
+  fetchNeoTransactionsInterval,
+  fetchNeoBalanceInterval,
+} from "../../../store/neoSlice";
 import { useLoadingState } from "../../../hooks/redux";
 import { capitalizeFirstLetter } from "../../../utils/capitalizeFirstLetter";
 import { formatDollar } from "../../../utils/formatDollars";
@@ -32,6 +38,7 @@ import SendIcon from "../../../assets/svg/send.svg";
 import ReceiveIcon from "../../../assets/svg/receive.svg";
 import SolanaIcon from "../../../assets/svg/solana.svg";
 import EthereumIcon from "../../../assets/svg/ethereum_plain.svg";
+import NeoIcon from "../../../assets/svg/ethereum_plain.svg";
 import TokenInfoCard from "../../../components/TokenInfoCard/TokenInfoCard";
 import CryptoInfoCard from "../../../components/CryptoInfoCard/CryptoInfoCard";
 import CryptoInfoCardSkeleton from "../../../components/CryptoInfoCard/CryptoInfoCardSkeleton";
@@ -200,6 +207,7 @@ export default function Index() {
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
+  const neoPrice = prices.neo.usd;
 
   const [usdBalance, setUsdBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -209,7 +217,9 @@ export default function Index() {
   const ticker = TICKERS[chainName];
   const isSolana = chainName === Chains.Solana;
   const isEthereum = chainName === Chains.Ethereum;
-  const Icon = isSolana ? SolanaIcon : EthereumIcon;
+  const isNeo = chainName === Chains.Neo; // Add check for Neo
+  const Icon = isSolana ? SolanaIcon : isEthereum ? EthereumIcon : isNeo ? NeoIcon : EthereumIcon;
+
 
   const fetchAndUpdatePrices = async () => {
     await fetchTokenBalance();
@@ -233,8 +243,10 @@ export default function Index() {
 
     if (chainName === Chains.Ethereum) {
       url = `https://sepolia.etherscan.io/tx/${hash}`;
-    } else {
+    } else if (chainName === Chains.Solana) {
       url = `https://explorer.solana.com/tx/${hash}`;
+    } else {
+      url = `https://xt4scan.ngd.network/address/${hash}`;
     }
     return url;
   };
@@ -277,6 +289,17 @@ export default function Index() {
         />
       );
     }
+    if (isNeo) {
+      return (
+        <CryptoInfoCard
+          onPress={() => _handlePressButtonAsync(urlBuilder(item.hash))}
+          title={capitalizeFirstLetter(item.direction)}
+          caption={`To ${truncateWalletAddress(item.to)}`}
+          details={`${sign} ${item.value} ${item.asset}`}
+          icon={<Icon width={35} height={35} fill={theme.colors.white} />}
+        />
+      );
+    }
   };
 
   const fetchPrices = async (currentTokenBalance: number) => {
@@ -288,6 +311,11 @@ export default function Index() {
 
     if (chainName === Chains.Solana) {
       dispatch(fetchSolanaTransactions(tokenAddress));
+      const usd = solPrice * currentTokenBalance;
+      setUsdBalance(usd);
+    }
+    if (chainName === Chains.Neo) {
+      dispatch(fetchNeoTransactions(tokenAddress));
       const usd = solPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
@@ -305,6 +333,11 @@ export default function Index() {
       const usd = solPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
+    if (chainName === Chains.Neo) {
+      dispatch(fetchNeoTransactionsInterval(tokenAddress));
+      const usd = solPrice * currentTokenBalance;
+      setUsdBalance(usd);
+    }
   };
 
   const fetchTokenBalance = async () => {
@@ -315,6 +348,9 @@ export default function Index() {
     if (isEthereum && tokenAddress) {
       dispatch(fetchEthereumBalance(tokenAddress));
     }
+    if (isNeo && tokenAddress) {
+      dispatch(fetchNeoBalance(tokenAddress));
+    }
   };
 
   const fetchTokenBalanceInterval = async () => {
@@ -324,6 +360,9 @@ export default function Index() {
 
     if (isEthereum && tokenAddress) {
       dispatch(fetchEthereumBalanceInterval(tokenAddress));
+    }
+    if (isNeo && tokenAddress) {
+      dispatch(fetchNeoBalanceInterval(tokenAddress));
     }
   };
 
