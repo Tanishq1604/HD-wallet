@@ -43,6 +43,7 @@ class TronService {
   async createWallet(): Promise<ExtendedHDWallet> {
     try {
       const account = this.tronWeb.utils.accounts.generateAccount();
+      console.log(account)
       const address = this.tronWeb.utils.address.fromPrivateKey(account.privateKey);
       console.log("createWallet")
       if(address==false){
@@ -228,11 +229,15 @@ class TronService {
       const transaction = await this.tronWeb.transactionBuilder.sendTrx(to, amount, from);
       
       // Estimate the energy (CPU) and bandwidth consumption
-     
+    
       // const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
       const estimatedEnergy = 50000;
       // const estimatedBandwidth = await this.tronWeb.trx.getBandwidth(transaction);
       const estimatedBandwidth = 100;
+// =======
+//       const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
+//       const estimatedBandwidth = await this.tronWeb.trx.getBandwidth(transaction.raw_data.contract.);
+// >>>>>>> 1bbfcc2 (before pull)
       
       // Get the current energy and bandwidth prices
       
