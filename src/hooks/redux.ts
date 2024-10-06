@@ -15,6 +15,9 @@ export const useLoadingState = () => {
   const activeNeoIndex = useSelector(
     (state: RootState) => state.neo.activeIndex
   );
+  const activeTronIndex = useSelector(
+    (state: RootState) => state.tron.activeIndex
+  );
 
   const ethLoading = useSelector(
     (state: RootState) =>
@@ -28,6 +31,10 @@ export const useLoadingState = () => {
     (state: RootState) =>
       state.neo.addresses[activeSolIndex].status === GeneralStatus.Loading
   );
+  const tronLoading = useSelector(
+    (state: RootState) =>
+      state.tron.addresses[activeTronIndex].status === GeneralStatus.Loading
+  );
 
-  return ethLoading || solLoading || neoLoading;
+  return ethLoading || solLoading || neoLoading || tronLoading;
 };
