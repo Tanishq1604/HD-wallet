@@ -21,9 +21,9 @@ import Theme from "../styles/theme";
 import { store, persistor, clearPersistedState } from "../store";
 import { resetSolanaState } from "../store/solanaSlice";
 import { resetEthereumState } from "../store/ethereumSlice";
-import { resetNeoState } from "../store/neoSlice";
 import { ROUTES } from "../constants/routes";
 import LeftIcon from "../assets/svg/left-arrow.svg";
+import { resetTronState } from "../store/tronSlice";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,7 +40,7 @@ export default function RootLayout() {
     } else {
       resetSolanaState();
       resetEthereumState();
-      // resetNeoState();
+      resetTronState();
       clearStorage();
       clearPersistedState();
       router.replace(ROUTES.walletSetup);
@@ -130,38 +130,6 @@ export default function RootLayout() {
                 name="(wallet)/seed/wallet-import-seed-phrase"
                 options={{
                   title: "Confirm Seed Phrase",
-                  headerShown: true,
-                  headerTransparent: true,
-                  headerTitleStyle: {
-                    color: "transparent",
-                  },
-                  headerLeft: () => (
-                    <IconTouchContainer onPress={() => router.back()}>
-                      <LeftIcon width={35} height={35} fill="#FFF" />
-                    </IconTouchContainer>
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="token/neo"
-                options={{
-                  title: "Neo Details",
-                  headerShown: true,
-                  headerTransparent: true,
-                  headerTitleStyle: {
-                    color: "transparent",
-                  },
-                  headerLeft: () => (
-                    <IconTouchContainer onPress={() => router.back()}>
-                      <LeftIcon width={35} height={35} fill="#FFF" />
-                    </IconTouchContainer>
-                  ),
-                }}
-              />
-              <Stack.Screen
-                name="token/send/neo"
-                options={{
-                  title: "Send Neo",
                   headerShown: true,
                   headerTransparent: true,
                   headerTitleStyle: {

@@ -10,7 +10,6 @@ import type { RootState } from "../../../store";
 import type { AddressState } from "../../../store/types";
 import EditIcon from "../../../assets/svg/edit.svg";
 import SolanaIcon from "../../../assets/svg/solana.svg";
-import NeoIcon from "../../../assets/svg/solana.svg";
 import TronIcon from "../../../../assets/tron.svg"
 import EthereumPlainIcon from "../../../assets/svg/ethereum_plain.svg";
 import CopyIcon from "../../../assets/svg/copy.svg";
@@ -141,12 +140,6 @@ const AccountsModalIndex = () => {
     )
     
   );
-  const neoAccount = useSelector((state: RootState) =>
-    state.neo.addresses.find(
-      (item: AddressState) => item.address === solAddress
-    )
-    
-  );
 
   const handleCopy = async (path: string) => {
     await Clipboard.setStringAsync(path);
@@ -177,7 +170,6 @@ const AccountsModalIndex = () => {
                       params: {
                         ethAddress: ethereumAccount.address,
                         solAddress: solanaAccount.address,
-                        neoAddress: neoAccount.address,
                         tronAddress: tronAccount.address,
                       },
                     })
@@ -265,30 +257,6 @@ const AccountsModalIndex = () => {
               </Row>
             </AccountSection>
           </AccountSettingsContainer>
-          <AccountSettingsContainer>
-            <CryptoSection isTop>
-              <IconContainer>
-                <NeoIcon width={25} height={25} />
-              </IconContainer>
-              <CryptoName>Neo</CryptoName>
-            </CryptoSection>
-            <AccountSection isBottom>
-              <Row>
-                <Col>
-                  <SectionCaption>Derivation Path</SectionCaption>
-                  <AccountDetailsText>
-                    {neoAccount.derivationPath}
-                  </AccountDetailsText>
-                </Col>
-                <IconOnPressView
-                  onPress={() => handleCopy(neoAccount.derivationPath)}
-                >
-                  <CopyIcon width={25} height={25} fill={theme.colors.white} />
-                </IconOnPressView>
-              </Row>
-            </AccountSection>
-          </AccountSettingsContainer>
-
         </ContentContainer>
       </SafeAreaContainer>
     </>

@@ -16,12 +16,10 @@ import { capitalizeFirstLetter } from "../../../../utils/capitalizeFirstLetter";
 import Button from "../../../../components/Button/Button";
 import ethService from "../../../../services/EthereumService";
 import solanaService from "../../../../services/SolanaService";
-import neoService from "../../../../services/NeoService";
 import { getPhrase } from "../../../../hooks/useStorageState";
 import type { RootState, AppDispatch } from "../../../../store";
 import { sendEthereumTransaction } from "../../../../store/ethereumSlice";
 import { sendSolanaTransaction } from "../../../../store/solanaSlice";
-import { sendNeoTransaction } from "../../../../store/neoSlice";
 import { BalanceContainer } from "../../../../components/Styles/Layout.styles";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 import { ROUTES } from "../../../../constants/routes";
@@ -110,9 +108,6 @@ export default function SendConfirmationPage() {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
-  const activeNeoIndex = useSelector(
-    (state: RootState) => state.neo.activeIndex
-  );
   const activeTronIndex= useSelector(
     (state: RootState) => state.tron.activeIndex
   );
@@ -126,7 +121,6 @@ export default function SendConfirmationPage() {
 
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
-  const neoPrice = prices.neo.usd;
   const tronPrice = prices.tron.usd;
 
   const [transactionFeeEstimate, setTransactionFeeEstimate] = useState("0.00");
@@ -205,27 +199,6 @@ export default function SendConfirmationPage() {
             params: { txHash: result, blockchain: Chains.Solana },
           });
         }
-      } else if (chainName === Chains.Neo) {
-        const neoPrivateKey = await neoService.derivePrivateKeysFromPhrase(
-          seedPhrase,
-          derivationPath
-        );
-        const result = await dispatch(
-          sendNeoTransaction({
-            privateKey: neoPrivateKey,
-            toAddress: address,
-            amount,
-            assetId: '0xd2a4cff31913016155e38e474a2c06d08be276cf', // Replace with actual NEO or GAS asset ID
-          })
-        ).unwrap();
-  
-        if (result) {
-          navigation.dispatch(StackActions.popToTop());
-          router.push({
-            pathname: ROUTES.confirmation,
-            params: { txHash: result.txid, blockchain: Chains.Neo },
-          });
-        }
       }
     } catch (error) {
       console.error("Failed to send transaction:", error);
@@ -237,7 +210,7 @@ export default function SendConfirmationPage() {
   };
 
   const calculateTransactionCosts = async () => {
-    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice : neoPrice;
+    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice : null;
     try {
       if (chainName === Chains.Ethereum) {
         const { gasEstimate, totalCost, totalCostMinusGas } =
@@ -326,38 +299,6 @@ export default function SendConfirmationPage() {
           setBtnDisabled(false);
         }
       }
-      else if (chainName === Chains.Neo) {
-        const networkFee = await neoService.calculateNetworkFee(address, amount);
-        const assetId = 'neo-asset-id'; // Replace with actual NEO or GAS asset ID
-        const balance = await neoService.getBalance(walletAddress);
-        const assetBalance = balance[assetId] || "0";
-  
-        // Convert network fee from satoshis to NEO
-        const networkFeeNeo = parseFloat(networkFee) / 100000000;
-        
-        const networkFeeUsd = networkFeeNeo * chainPrice;
-        const networkFeeEstimateUsd = formatDollar(networkFeeUsd);
-  
-        const amountNeo = parseFloat(amount);
-        const totalCostNeo = amountNeo + networkFeeNeo;
-        const totalCostUsd = formatDollar(totalCostNeo * chainPrice);
-  
-        if (networkFeeUsd > 0 && networkFeeUsd < 0.01) {
-          setTransactionFeeEstimate(`< ${networkFeeEstimateUsd}`);
-        } else {
-          setTransactionFeeEstimate(networkFeeEstimateUsd);
-        }
-  
-        setTotalCost(totalCostUsd);
-        const availableBalance = parseFloat(assetBalance) / 100000000; // Convert from satoshis to NEO
-      if (totalCostNeo > availableBalance) {
-        setError("Not enough funds to send transaction.");
-        setBtnDisabled(true);
-      } else {
-        setError("");
-        setBtnDisabled(false);
-      }
-    }
     } catch (error) {
       console.error("Failed to fetch transaction costs:", error);
     }

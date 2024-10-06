@@ -28,9 +28,7 @@ export interface CryptoPrices {
   solana: {
     usd: number;
   };
-  neo: {  // Add neo here
-    usd: number;
-  };
+
   tron: {  // Add tron here
     usd: number;
   };
@@ -50,10 +48,8 @@ const initialState = {
     solana: {
       usd: 0,
     },
-    neo: {  // Add neo initialization here
-      usd: 0,
-    },
-    tron: {  // Add neo initialization here
+   
+    tron: { 
       usd: 0,
     },
   },

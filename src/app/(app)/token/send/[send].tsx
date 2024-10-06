@@ -14,16 +14,14 @@ import { Chains } from "../../../../types";
 import SolanaIcon from "../../../../assets/svg/solana.svg";
 import EthereumIcon from "../../../../assets/svg/ethereum_plain.svg";
 import TronIcon from "../../../../../assets/tron.svg";
-import NeoIcon from "../../../../assets/svg/ethereum_plain.svg";
+
 import { capitalizeFirstLetter } from "../../../../utils/capitalizeFirstLetter";
 import { formatDollar } from "../../../../utils/formatDollars";
 import ethService from "../../../../services/EthereumService";
 import solanaService from "../../../../services/SolanaService";
-import neoService from "../../../../services/NeoService";
 import Button from "../../../../components/Button/Button";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 import { chain } from "lodash";
-import {  u } from "@cityofzion/neon-core";
 import tronService from "../../../../services/TronService";
 
 type FormikChangeHandler = {
@@ -182,9 +180,7 @@ export default function SendPage() {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
-  const activeNeoIndex = useSelector(
-    (state: RootState) => state.neo.activeIndex
-  );
+
   const activeTronIndex= useSelector(
     (state: RootState) => state.tron.activeIndex
   );
@@ -197,7 +193,6 @@ export default function SendPage() {
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
-  const neoPrice = prices.neo.usd;
   const tronPrice = prices.tron.usd;
 
   const [isAddressInputFocused, setIsAddressInputFocused] = useState(false);
@@ -228,8 +223,6 @@ export default function SendPage() {
         return <EthereumIcon width={45} height={45} />;
       case Chains.Tron:
         return <TronIcon width={45} height={45} />;
-      case Chains.Neo:
-        return <EthereumIcon width={45} height={45} />;
       default:
         return null;
     }
@@ -237,7 +230,7 @@ export default function SendPage() {
 
   const renderDollarAmount = (amountValue: string) => {
     if (amountValue === "") return formatDollar(0);
-    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice : neoPrice;
+    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice :null;
     const USDAmount = chainPrice * parseFloat(amountValue);
     return formatDollar(USDAmount);
   };
@@ -285,8 +278,6 @@ export default function SendPage() {
       ? solanaService.validateAddress(address)
       : chainName === Chains.Tron
       ? tronService.validateAddress(address)
-      : chainName === Chains.Neo
-      ? neoService.validateAddress(address)
       : false;
   };
 
@@ -333,12 +324,6 @@ export default function SendPage() {
       if (maxAmount > amount) {
         errors.amount = "Insufficient funds for amount plus transaction fees";
       } 
-    } else if (chainName === Chains.Neo) {
-      const networkFee = await neoService.calculateNetworkFee(toAddress, amount.toString());
-      const totalCost = u.BigInteger.fromDecimal(amount, 8).add(u.BigInteger.fromDecimal(networkFee, 8));
-      if (totalCost.compare(u.BigInteger.fromDecimal(tokenBalance, 8)) > 0) {
-        errors.amount = "Insufficient funds for amount plus network fee";
-      }
     }
   };
   const calculateMaxAmount = async (
@@ -354,9 +339,7 @@ export default function SendPage() {
         : chainName === Chains.Solana
         ? await solanaService.validateAddress(toAddress)
         : chainName === Chains.Tron
-        ? tronService.validateAddress(toAddress)
-        : chainName === Chains.Neo
-        ? await neoService.validateAddress(toAddress)  // Add Neo validation here
+        ? tronService.validateAddress(toAddress)  
         : false; 
     if (!isAddressValid) {
       formRef.current?.setFieldError(
@@ -400,16 +383,7 @@ export default function SendPage() {
           setFieldValue("amount", "0");
           console.error("Insufficient funds for transaction fee.");
         }
-      } else if (chainName === Chains.Neo) {
-        const assetId = '0xd2a4cff31913016155e38e474a2c06d08be276cf'; // Replace with actual NEO or GAS asset ID
-        const maxAmount = await neoService.getMaxTransferAmount(address, toAddress, assetId);
-        if (parseFloat(maxAmount) > 0) {
-          setFieldValue("amount", maxAmount);
-        } else {
-          setFieldValue("amount", "0");
-          console.error("Insufficient funds for network fee.");
-    }
-      }
+      } 
     } catch (error) {
       console.error("Failed to calculate max amount:", error);
       setFieldValue("amount", "0");

@@ -7,7 +7,7 @@ import { ThemeType } from "../../../../styles/theme";
 import type { RootState } from "../../../../store";
 import Ethereum from "../../../../assets/svg/ethereum.svg";
 import Solana from "../../../../assets/svg/solana.svg";
-import Neo from "../../../../assets/svg/solana.svg";
+
 import CopyIcon from "../../../../assets/svg/copy.svg";
 import QRCodeIcon from "../../../../assets/svg/qr-code.svg";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
@@ -121,17 +121,11 @@ export default function ReceiveOptionsPage() {
   const activeTronIndex = useSelector(
     (state: RootState) => state.tron.activeIndex
   )
-  const activeNeoIndex = useSelector(
-    (state: RootState) => state.neo.activeIndex
-  );
   const ethAddress = useSelector(
     (state: RootState) => state.ethereum.addresses[activeEthIndex].address
   );
   const solAddress = useSelector(
     (state: RootState) => state.solana.addresses[activeSolIndex].address
-  );
-  const neoAddress = useSelector(
-    (state: RootState) => state.neo.addresses[activeSolIndex].address
   );
   const tronAddress = useSelector(
     (state: RootState) => state.tron.addresses[activeTronIndex].address
@@ -149,11 +143,6 @@ export default function ReceiveOptionsPage() {
           chainName="Solana"
           address={solAddress}
           icon={<Solana width={25} height={25} />}
-        />
-        <ReceiveCard
-          chainName="Neo"
-          address={solAddress}
-          icon={<Neo width={25} height={25} />}
         />
         <ReceiveCard
           chainName="Tron"

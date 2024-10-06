@@ -7,18 +7,12 @@ import styled from "styled-components/native";
 import { useTheme } from "styled-components";
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
-import neoService from "../../../services/NeoService";
 import { ThemeType } from "../../../styles/theme";
 import {
   saveSolanaAddresses,
   fetchSolanaBalance,
   fetchSolanaTransactions,
 } from "../../../store/solanaSlice";
-import {
-  saveNeoAddresses,
-  fetchNeoBalance,
-  fetchNeoTransactions,
-} from "../../../store/neoSlice";
 import {
   saveEthereumAddresses,
   fetchEthereumBalance,
@@ -35,6 +29,8 @@ import {
   ErrorTextCenter,
   ErrorTextContainer,
 } from "../../../components/Styles/Errors.styles";
+import { fetchTronBalance, fetchTronTransactions, saveTronAddresses } from "../../../store/tronSlice";
+import tronService from "../../../services/TronService";
 
 interface SeedTextInputProps {
   theme: ThemeType;
@@ -170,9 +166,6 @@ export default function Page() {
       const unusedSolIndex = await solanaService.findNextUnusedWalletIndex(
         phraseTextValue
       );
-      const unusedNeoIndex = await neoService.findNextUnusedWalletIndex(
-        phraseTextValue
-      );
 
       highestIndex = Math.max(unusedEthIndex, unusedSolIndex);
       const importedEthWallets = await ethService.importAllActiveAddresses(
@@ -183,9 +176,8 @@ export default function Page() {
         phraseTextValue,
         highestIndex
       );
-      const importedNeoWallets = await neoService.importAllActiveAddresses(
-        phraseTextValue,
-        highestIndex
+      const importedTronWallets = await tronService.importAllActiveAddresses(
+        phraseTextValue
       );
 
       const transformedActiveEthAddresses: AddressState[] =
@@ -205,9 +197,8 @@ export default function Page() {
             transactionConfirmations: [],
           };
         });
-
-      const transformedActiveSolAddresses: AddressState[] =
-        importedSolWallets.map((info, index) => {
+        const transformedActiveTronAddresses: AddressState[] =
+        importedTronWallets.map((info, index) => {
           return {
             accountName: `Account ${index + 1}`,
             derivationPath: info.derivationPath,
@@ -223,7 +214,9 @@ export default function Page() {
             transactionConfirmations: [],
           };
         });
-        const transformedActiveNeoAddresses: AddressState[] =
+
+
+      const transformedActiveSolAddresses: AddressState[] =
         importedSolWallets.map((info, index) => {
           return {
             accountName: `Account ${index + 1}`,
@@ -256,10 +249,10 @@ export default function Page() {
       dispatch(
         fetchSolanaTransactions(transformedActiveSolAddresses[0].address)
       );
-      dispatch(saveNeoAddresses(transformedActiveNeoAddresses));
-      dispatch(fetchNeoBalance(transformedActiveNeoAddresses[0].address));
+      dispatch(saveTronAddresses(transformedActiveTronAddresses));
+      dispatch(fetchTronBalance(transformedActiveTronAddresses[0].address));
       dispatch(
-        fetchNeoTransactions({address: transformedActiveNeoAddresses[0].address})
+        fetchTronTransactions(transformedActiveTronAddresses[0].address)
       );
 
       router.push({

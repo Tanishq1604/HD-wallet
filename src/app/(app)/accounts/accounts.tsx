@@ -10,7 +10,6 @@ import { debounce } from "lodash";
 import { formatDollar } from "../../../utils/formatDollars";
 import ethService from "../../../services/EthereumService";
 import solanaService from "../../../services/SolanaService";
-import neoService from "../../../services/NeoService";
 import tronService from "../../../services/TronService";
 import { getPhrase } from "../../../hooks/useStorageState";
 import type { RootState } from "../../../store";
@@ -29,10 +28,6 @@ import {
   setActiveTronAccount,
   updateTronAddresses,
 } from "../../../store/tronSlice";
-import {
-  setActiveNeoAccount,
-  updateNeoAddresses,
-} from "../../../store/neoSlice";
 import { ROUTES } from "../../../constants/routes";
 import RightArrowIcon from "../../../assets/svg/right-arrow.svg";
 import PhraseIcon from "../../../assets/svg/phrase.svg";
@@ -152,7 +147,6 @@ interface WalletPairs {
   walletDetails: {
     ethereum: AddressState | {};
     solana: AddressState | {};
-    neo: AddressState | {};
     tron: AddressState | {};
   };
 }
@@ -160,7 +154,6 @@ interface WalletPairs {
 async function compileAddressesConcurrently(
   ethAcc: AddressState[],
   solAcc: AddressState[],
-  neoAcc: AddressState[],
   tronAcc: AddressState[]
 ) {
   const ethereumBalancePromise = ethAcc.map(async (account: AddressState) => {
@@ -174,7 +167,7 @@ async function compileAddressesConcurrently(
     const balance = await tronService.getBalance(account.address);
     return {
      ...account,
-      balance: balance,
+      balance: Number(balance),
     };
   });
 
@@ -185,23 +178,14 @@ async function compileAddressesConcurrently(
       balance: balance,
     };
   });
-  const neoBalancePromise = neoAcc.map(async (account: AddressState) => {
-    const balance = await neoService.getBalance(account.address);
-    return {
-      ...account,
-      balance: balance,
-    };
-  });
 
   const ethereum = await Promise.all(ethereumBalancePromise);
   const solana = await Promise.all(solanaBalancePromise);
-  const neo = await Promise.all(neoBalancePromise);
   const tron = await Promise.all(tronBalancePromise);
 
   return {
     ethereum,
     solana,
-    neo,
     tron,
   };
 }
@@ -209,28 +193,25 @@ async function compileAddressesConcurrently(
 function compileInactiveAddresses(
   ethAcc: AddressState[],
   solAcc: AddressState[],
-  neoAcc: AddressState[],
   tronAcc: AddressState[],
   activeEthAddress: string,
   activeSolAddress: string,
-  activeNeoAddress: string,
   activeTronAddress: string
 ) {
   const mergedWalletPairs: WalletPairs[] = [];
-  const highestAccAmount = Math.max(ethAcc.length, solAcc.length, neoAcc.length, tronAcc.length);
+  const highestAccAmount = Math.max(ethAcc.length, solAcc.length, tronAcc.length);
 
   for (let i = 0; i < highestAccAmount; i++) {
     const isActiveAccount =
       ethAcc[i].address === activeEthAddress &&
-      solAcc[i].address === activeSolAddress && neoAcc[i].address === activeNeoAddress&& tronAcc[i].address === activeTronAddress;
+      solAcc[i].address === activeSolAddress &&tronAcc[i].address === activeTronAddress;
     mergedWalletPairs.push({
       id: `${i}-${ethAcc[i].address}`,
-      accountName: ethAcc[i]?.accountName || solAcc[i].accountName || neoAcc[i].accountName || tronAcc[i].accountName,
+      accountName: ethAcc[i]?.accountName || solAcc[i].accountName || tronAcc[i].accountName,
       isActiveAccount,
       walletDetails: {
         ethereum: ethAcc[i] ?? {},
         solana: solAcc[i] ?? {},
-        neo: neoAcc[i] ?? {},
         tron: tronAcc[i]?? {},
       },
     });
@@ -246,9 +227,7 @@ const AccountsIndex = () => {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
-  const activeNeoIndex = useSelector(
-    (state: RootState) => state.neo.activeIndex
-  );
+
   const activeTronIndex = useSelector(
     (state: RootState) => state.tron.activeIndex
   );
@@ -258,9 +237,6 @@ const AccountsIndex = () => {
   const activeSolAddress = useSelector(
     (state: RootState) => state.solana.addresses[activeSolIndex]
   );
-  const activeNeoAddress = useSelector(
-    (state: RootState) => state.neo.addresses[activeNeoIndex]
-  );
   const activeTronAddress = useSelector(
     (state: RootState) => state.tron.addresses[activeTronIndex]
   );
@@ -268,7 +244,6 @@ const AccountsIndex = () => {
     (state: RootState) => state.ethereum.addresses
   );
   const solAccounts = useSelector((state: RootState) => state.solana.addresses);
-  const neoAccounts = useSelector((state: RootState) => state.neo.addresses);
   const tronAccounts = useSelector((state: RootState) => state.tron.addresses);
   const prices = useSelector((state: RootState) => state.price.data);
 
@@ -283,7 +258,7 @@ const AccountsIndex = () => {
     try {
       const nextEthIndex = ethAccounts.length;
       const nextSolIndex = solAccounts.length;
-      const nextNeoIndex = neoAccounts.length;
+     
       const nextTronIndex = tronAccounts.length;
       const phrase = await getPhrase();
       const newEthWallet = await ethService.createWalletByIndex(
@@ -298,10 +273,7 @@ const AccountsIndex = () => {
         phrase,
         nextSolIndex
       );
-      const newNeoWallet = await neoService.createWalletByIndex(
-        phrase,
-        nextSolIndex
-      );
+     
 
       const transformedEthWallet: AddressState = {
         accountName: `Account ${nextEthIndex + 1}`,
@@ -345,24 +317,9 @@ const AccountsIndex = () => {
         status: GeneralStatus.Idle,
         transactionConfirmations: [],
       };
-      const transformedNeoWallet: AddressState = {
-        accountName: `Account ${nextNeoIndex + 1}`,
-        derivationPath: `m/44'/888'/0'/0'`,
-        address: newNeoWallet.address,
-        publicKey: newNeoWallet.publicKey,
-        balance: 0,
-        transactionMetadata: {
-          paginationKey: undefined,
-          transactions: [],
-        },
-        failedNetworkRequest: false,
-        status: GeneralStatus.Idle,
-        transactionConfirmations: [],
-      };
 
       dispatch(updateEthereumAddresses(transformedEthWallet));
       dispatch(updateSolanaAddresses(transformedSolWallet));
-      dispatch(updateNeoAddresses(transformedNeoWallet));
       dispatch(updateTronAddresses(transformedTronWallet));
     } catch (err) {
       console.error("Failed to create new wallet pair:", err);
@@ -375,20 +332,18 @@ const AccountsIndex = () => {
     (index: number) => {
       dispatch(setActiveEthereumAccount(index));
       dispatch(setActiveSolanaAccount(index));
-      dispatch(setActiveNeoAccount(index));
       dispatch(setActiveTronAccount(index));
     },
     [dispatch]
   );
 
   const calculateTotalPrice = useCallback(
-    (ethBalance: number, solBalance: number,neoBalance: number,tronBalance:number) => {
+    (ethBalance: number, solBalance: number,tronBalance:number) => {
       const ethUsd = prices.ethereum.usd * ethBalance;
       const solUsd = prices.solana.usd * solBalance;
-      const neoUsd = prices.neo.usd * neoBalance;
       const tronUsd = prices.tron.usd * tronBalance;
-      const totalUsd = ethUsd + solUsd + neoUsd;
-      return formatDollar(ethUsd + solUsd + neoUsd+tronUsd);
+      const totalUsd = ethUsd + solUsd +tronUsd; 
+      return formatDollar(ethUsd + solUsd+tronUsd);
     },
     [prices]
   );
@@ -429,7 +384,6 @@ const AccountsIndex = () => {
       const balance = calculateTotalPrice(
         item.walletDetails.ethereum.balance,
         item.walletDetails.solana.balance,
-        item.walletDetails.neo.balance,
         item.walletDetails.tron.balance
       );
       return (
@@ -452,7 +406,6 @@ const AccountsIndex = () => {
                 params: {
                   ethAddress: item.walletDetails.ethereum.address,
                   solAddress: item.walletDetails.solana.address,
-                  neoAddress: item.walletDetails.neo.address,
                   tronAddress: item.walletDetails.tron.address,
                   balance,
                 },
@@ -478,23 +431,20 @@ const AccountsIndex = () => {
     // Have a price and wallet section in redux. Currently
     // this causes too many re-renders
     try {
-      const { ethereum, solana ,neo,tron } = await compileAddressesConcurrently(
+      const { ethereum, solana ,tron } = await compileAddressesConcurrently(
         ethAccounts,
         solAccounts,
-        neoAccounts,
         tronAccounts
 
       );
-      if (ethereum && solana&& neo) {
+      if (ethereum && solana&&tron) {
         setAccounts(
           compileInactiveAddresses(
             ethereum,
             solana,
-            // @ts-ignore
-            neo,
             tron,
             activeEthAddress.address,
-            activeSolAddress.address,activeNeoAddress.address,
+            activeSolAddress.address,
             activeTronAddress.address
 
           )
@@ -508,15 +458,12 @@ const AccountsIndex = () => {
   }, [
     ethAccounts,
     solAccounts,
-    neoAccounts,
         tronAccounts,
     activeEthAddress,
     activeSolAddress,
-    activeNeoAddress,
     activeTronAddress,
     activeEthIndex,
     activeSolIndex,
-    activeNeoIndex,
     activeTronIndex,
   ]);
 

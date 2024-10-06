@@ -26,12 +26,6 @@ import {
   fetchSolanaTransactionsInterval,
   fetchSolanaBalanceInterval,
 } from "../../../store/solanaSlice";
-import {
-  fetchNeoBalance,
-  fetchNeoTransactions,
-  fetchNeoTransactionsInterval,
-  fetchNeoBalanceInterval,
-} from "../../../store/neoSlice";
 import { useLoadingState } from "../../../hooks/redux";
 import { capitalizeFirstLetter } from "../../../utils/capitalizeFirstLetter";
 import { formatDollar } from "../../../utils/formatDollars";
@@ -46,7 +40,6 @@ import ReceiveIcon from "../../../assets/svg/receive.svg";
 import SolanaIcon from "../../../assets/svg/solana.svg";
 import TronIcon from "../../../../assets/tron.svg";
 import EthereumIcon from "../../../assets/svg/ethereum_plain.svg";
-import NeoIcon from "../../../assets/svg/ethereum_plain.svg";
 import TokenInfoCard from "../../../components/TokenInfoCard/TokenInfoCard";
 import CryptoInfoCard from "../../../components/CryptoInfoCard/CryptoInfoCard";
 import CryptoInfoCardSkeleton from "../../../components/CryptoInfoCard/CryptoInfoCardSkeleton";
@@ -215,7 +208,6 @@ export default function Index() {
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
-  const neoPrice = prices.neo.usd;
   const tronPrice= prices.tron.usd;
 
   const [usdBalance, setUsdBalance] = useState(0);
@@ -227,8 +219,7 @@ export default function Index() {
   const isSolana = chainName === Chains.Solana;
   const isEthereum = chainName === Chains.Ethereum;
   const isTron = chainName === Chains.Tron; // Add check for Tron
-  const isNeo = chainName === Chains.Neo; // Add check for Neo
-  const Icon = isSolana ? SolanaIcon : isEthereum ? EthereumIcon : isTron? TronIcon: isNeo ? NeoIcon : EthereumIcon;
+  const Icon = isSolana ? SolanaIcon : isEthereum ? EthereumIcon : isTron? TronIcon:null;
 
 
   const fetchAndUpdatePrices = async () => {
@@ -313,17 +304,6 @@ export default function Index() {
         />
       );
     }
-    if (isNeo) {
-      return (
-        <CryptoInfoCard
-          onPress={() => _handlePressButtonAsync(urlBuilder(item.hash))}
-          title={capitalizeFirstLetter(item.direction)}
-          caption={`To ${truncateWalletAddress(item.to)}`}
-          details={`${sign} ${item.value} ${item.asset}`}
-          icon={<Icon width={35} height={35} fill={theme.colors.white} />}
-        />
-      );
-    }
   };
 
   const fetchPrices = async (currentTokenBalance: number) => {
@@ -343,11 +323,7 @@ export default function Index() {
       const usd = tronPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
-    if (chainName === Chains.Neo) {
-      dispatch(fetchNeoTransactions(tokenAddress));
-      const usd = solPrice * currentTokenBalance;
-      setUsdBalance(usd);
-    }
+
   };
 
   const fetchPricesInterval = async (currentTokenBalance: number) => {
@@ -367,11 +343,6 @@ export default function Index() {
       const usd = solPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
-    if (chainName === Chains.Neo) {
-      dispatch(fetchNeoTransactionsInterval(tokenAddress));
-      const usd = solPrice * currentTokenBalance;
-      setUsdBalance(usd);
-    }
   };
 
   const fetchTokenBalance = async () => {
@@ -385,9 +356,6 @@ export default function Index() {
     if (isTron && tokenAddress) {
       dispatch(fetchTronBalance(tokenAddress));
     }
-    if (isNeo && tokenAddress) {
-      dispatch(fetchNeoBalance(tokenAddress));
-    }
   };
 
   const fetchTokenBalanceInterval = async () => {
@@ -400,9 +368,6 @@ export default function Index() {
     }
     if (isTron && tokenAddress) {
       dispatch(fetchTronBalanceInterval(tokenAddress));
-    }
-    if (isNeo && tokenAddress) {
-      dispatch(fetchNeoBalanceInterval(tokenAddress));
     }
   };
 

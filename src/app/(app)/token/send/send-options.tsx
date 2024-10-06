@@ -10,7 +10,6 @@ import CryptoInfoCard from "../../../../components/CryptoInfoCard/CryptoInfoCard
 import SolanaIcon from "../../../../assets/svg/solana.svg";
 import EthereumIcon from "../../../../assets/svg/ethereum.svg";
 import TronIcon from "../../../../../assets/tron.svg"
-import NeoIcon from "../../../../assets/svg/ethereum.svg";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 
 const ContentContainer = styled.View<{ theme: ThemeType }>`
@@ -37,17 +36,11 @@ export default function SendOptions() {
   const activeTronIndex = useSelector(
     (state: RootState) => state.tron.activeIndex
   );
-  const activeNeoIndex = useSelector(
-    (state: RootState) => state.neo.activeIndex
-  );
   const ethBalance = useSelector(
     (state: RootState) => state.ethereum.addresses[activeEthIndex].balance
   );
   const solBalance = useSelector(
     (state: RootState) => state.solana.addresses[activeSolIndex].balance
-  );
-  const neoBalance = useSelector(
-    (state: RootState) => state.neo.addresses[activeSolIndex].balance
   );
   const tronBalance = useSelector(
     (state: RootState) => state.tron.addresses[activeTronIndex].balance
@@ -55,28 +48,24 @@ export default function SendOptions() {
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
-  const neoPrice = prices.neo.usd;
   const tronPrice = prices.tron.usd;
 
   const [solUsd, setSolUsd] = useState(0);
   const [ethUsd, setEthUsd] = useState(0);
-  const [neoUsd, setNeoUsd] = useState(0);
   const [tronUsd, setTronUsd] = useState(0);
 
   useEffect(() => {
     const fetchPrices = async () => {
       const ethUsd = ethPrice * ethBalance;
       const solUsd = solPrice * solBalance;
-      const neoUsd = neoPrice * neoBalance;
       const tronUsd = tronPrice * tronBalance;
 
       setEthUsd(ethUsd);
       setSolUsd(solUsd);
-      setNeoUsd(neoUsd);
       setTronUsd(tronUsd);
     };
     fetchPrices();
-  }, [ethBalance, solBalance,neoBalance,tronBalance]);
+  }, [ethBalance, solBalance,tronBalance]);
 
   return (
     <SafeAreaContainer>
@@ -97,15 +86,6 @@ export default function SendOptions() {
             onPress={() => router.push("/token/send/solana")}
             title="Solana"
             caption={`${solBalance} SOL`}
-            details={formatDollar(solUsd)}
-            icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
-          />
-        </CardView>
-        <CardView>
-          <CryptoInfoCard
-            onPress={() => router.push("/token/send/neo")}
-            title="Neo"
-            caption={`${neoBalance} SOL`}
             details={formatDollar(solUsd)}
             icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
           />

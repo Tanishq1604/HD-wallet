@@ -34,23 +34,6 @@ export const selectSolanaBalance = (state: RootState) => {
   return state.solana.addresses[activeIndex]?.balance ?? "0";
 };
 
-// Neo selectors
-export const selectActiveNeoIndex = (state: RootState) =>
-  state.neo.activeIndex ?? 0;
-
-export const selectActiveNeoAddress = (state: RootState) => {
-  const activeIndex = selectActiveNeoIndex(state);
-  return state.neo.addresses[activeIndex]?.address ?? "";
-};
-
-export const selectNeoAddresses = (state: RootState) =>
-  state.neo.addresses;
-
-export const selectNeoBalance = (state: RootState) => {
-  const activeIndex = selectActiveNeoIndex(state);
-  return state.neo.addresses[activeIndex]?.balance ?? "0";
-};
-
 // Tron selectors
 export const selectActiveTronIndex = (state: RootState) =>
   state.tron.activeIndex ?? 0;
