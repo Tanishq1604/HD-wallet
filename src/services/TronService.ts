@@ -1,6 +1,7 @@
 import {TronWeb} from 'tronweb';
 import { validateMnemonic } from 'bip39';
 import uuid from 'react-native-uuid';
+import axios from 'axios'; // Make sure to install axios if you're using it
 
 interface ExtendedHDWallet {
   address: string;
@@ -132,39 +133,42 @@ class TronService {
     }
   }
   async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
-  const maxRetries = 3;
-   let attempts = 0;
+  try {
+    // Default limit if params is undefined or doesn't have a limit
+    const limit = params?.limit || 30;
+    const start =  0;
 
-   const fetchWithRetry = async () => {
-     try {
-       const limit = params?.limit || 30;
-       const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', limit);
-       const transformTransactions = (txs: any[]) =>
-         txs.map((tx: any) => ({
-           ...tx,
-           uniqueId: uuid.v4(),
-           value: this.tronWeb.fromSun(tx.amount),
-           blockTime: tx.block_timestamp,
-           direction: tx.from === address ? "sent" : "received",
-         }));
+    // Construct the API URL with query parameters
+    const url = `https://apilist.tronscan.org/api/transaction?sort=-timestamp&count=true&limit=${limit}&start=${start}&address=${address}`;
 
-       const allTransactions = transformTransactions(transactions);
-       return {
-         transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
-       };
-     } catch (error) {
-       if (attempts < maxRetries) {
-         attempts++;
-         console.warn(`Attempt ${attempts} failed, retrying...`);
-         return fetchWithRetry(); // Retry
-       } else {
-         console.error("Failed to fetch transaction history after multiple attempts", error);
-         throw error;
-       }
-     }
-   };
-   
-   return fetchWithRetry();
+    // Make the HTTP GET request to fetch transactions
+    const response = await axios.get(url);
+
+    // Check if the response contains transaction data
+    if (response.status !== 200 || !response.data || !response.data.data) {
+      throw new Error('Failed to fetch transactions from TronScan');
+    }
+
+    const transactions = response.data.data;
+
+
+    const transformTransactions = (txs: any[]) =>
+      txs.map((tx: any) => ({
+        ...tx,
+        uniqueId: uuid.v4(),
+        value: this.tronWeb.fromSun(tx.amount), // Convert SUN to TRX
+        blockTime: tx.block_timestamp,
+        direction: tx.from === address ? "sent" : "received",
+      }));
+
+    const allTransactions = transformTransactions(transactions);
+    return {
+      transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
+    };
+  } catch (error) {
+    console.error("failed to fetch transaction history", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
   // async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
   //   try {
