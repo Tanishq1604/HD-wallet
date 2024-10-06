@@ -16,6 +16,12 @@ import {
   fetchEthereumBalanceInterval,
 } from "../../store/ethereumSlice";
 import {
+  fetchTronBalance,
+  fetchTronTransactions,
+  fetchTronTransactionsInterval,
+  fetchTronBalanceInterval,
+} from "../../store/tronSlice";
+import {
   fetchSolanaBalance,
   fetchSolanaTransactions,
   fetchSolanaTransactionsInterval,
@@ -41,6 +47,7 @@ import CryptoInfoCard from "../../components/CryptoInfoCard/CryptoInfoCard";
 import CryptoInfoCardSkeleton from "../../components/CryptoInfoCard/CryptoInfoCardSkeleton";
 import SolanaIcon from "../../assets/svg/solana.svg";
 import NeoIcon from "../../assets/svg/solana.svg";
+import TronIcon from "../../assets/svg/tron.svg";
 import EthereumPlainIcon from "../../assets/svg/ethereum_plain.svg";
 import EthereumIcon from "../../assets/svg/ethereum.svg";
 import { FETCH_PRICES_INTERVAL } from "../../constants/price";
@@ -141,6 +148,25 @@ export default function Index() {
   const theme = useTheme();
   const isLoading = useLoadingState();
 
+  const activeTronIndex = useSelector(
+    (state: RootState) => state.tron.activeIndex
+  );
+  const tronWalletAddress = useSelector(
+    (state: RootState) => state.tron.addresses[activeEthIndex].address
+  );
+  const tronBalance = useSelector(
+    (state: RootState) => state.tron.addresses[activeEthIndex].balance
+  );
+  const tronTransactions = useSelector(
+    (state: RootState) =>
+      state.tron.addresses[activeEthIndex].transactionMetadata.transactions
+  );
+  const failedtronStatus = useSelector(
+    (state: RootState) =>
+      state.tron.addresses[activeEthIndex].status === GeneralStatus.Failed
+  );
+
+
   const activeEthIndex = useSelector(
     (state: RootState) => state.ethereum.activeIndex
   );
@@ -200,12 +226,15 @@ export default function Index() {
   const solPrice = prices?.solana?.usd;
   const ethPrice = prices?.ethereum?.usd;
   const neoPrice = prices?.neo?.usd;
+  const tronPrice=prices?.tron?.usd;
 
   const [refreshing, setRefreshing] = useState(false);
   const [usdBalance, setUsdBalance] = useState(0);
   const [solUsd, setSolUsd] = useState(0);
   const [ethUsd, setEthUsd] = useState(0);
   const [neoUsd, setNeoUsd] = useState(0);
+  const [tronUsd, settronUsd] = useState(0);
+
   const [transactions, setTransactions] = useState([]);
   const [bottomSheetIndex, setBottomSheetIndex, bottomSheetIndexLoading] =
     useStorage(SNAP_POINTS);
@@ -218,7 +247,7 @@ export default function Index() {
     setTimeout(() => {
       setRefreshing(false);
     }, 2000);
-  }, [dispatch, solWalletAddress, ethWalletAddress,neoWalletAddress]);
+  }, [dispatch, solWalletAddress, ethWalletAddress,neoWalletAddress,tronWalletAddress]);
 
   const fetchTokenBalances = useCallback(async () => {
     if (ethWalletAddress) {
@@ -230,7 +259,10 @@ export default function Index() {
     }if (neoWalletAddress) {
       dispatch(fetchNeoBalance(neoWalletAddress));
     }
-  }, [ethBalance, solBalance,neoBalance, dispatch]);
+    if (tronWalletAddress) {
+      dispatch(fetchTronBalance(tronWalletAddress));
+    }
+  }, [ethBalance, solBalance,neoBalance,tronBalance, dispatch]);
 
   const fetchTokenBalancesInterval = useCallback(async () => {
     if (ethWalletAddress) {
@@ -243,7 +275,10 @@ export default function Index() {
     if (neoWalletAddress) {
       dispatch(fetchNeoBalanceInterval(neoWalletAddress));
     }
-  }, [ethBalance, solBalance,neoBalance, dispatch]);
+    if (tronWalletAddress) {
+      dispatch(fetchTronBalanceInterval(neoWalletAddress));
+    }
+  }, [ethBalance, solBalance,neoBalance,tronBalance, dispatch]);
 
   const updatePrices = () => {
     if (ethWalletAddress && solWalletAddress) {
@@ -254,6 +289,10 @@ export default function Index() {
       setEthUsd(ethUsd);
       setSolUsd(solUsd);
       setNeoUsd(neoUsd);
+    }
+    if (tronWalletAddress) {
+      const tronUsd = tronPrice * tronBalance;
+      settronUsd(tronUsd);
     }
   };
 
@@ -267,7 +306,10 @@ export default function Index() {
       url = `https://sepolia.etherscan.io/tx/${hash}`;
     } else if (asset.toLowerCase() === TICKERS.solana.toLowerCase()) {
       url = `https://explorer.solana.com/?cluster=testnet/tx/${hash}`;
-    } else {
+    } 
+    else if (asset.toLowerCase() === TICKERS.tron.toLowerCase()) {
+      url = `https://tronscan.org/#/transaction/${hash}`;}
+    else {
       url = 'https://xt4scan.ngd.network/';
     }
     return url;
@@ -281,12 +323,30 @@ export default function Index() {
     const isEthereum =
       item.asset.toLowerCase() === TICKERS.ethereum.toLowerCase();
     const isNeo = item.asset.toLowerCase() === TICKERS.neo.toLowerCase();
+    const isTron = item.asset.toLowerCase() === TICKERS.tron.toLowerCase();
     const Icon = isSolana ? SolanaIcon  : isEthereum ? EthereumIcon : NeoIcon;
     const sign = item.direction === "received" ? "+" : "-";
     if (isSolana) {
       const caption =
         item.direction === "received"
           ? `from ${truncateWalletAddress(item.from)}`
+          : `To ${truncateWalletAddress(item.to)}`;
+      return (
+        <CryptoInfoCard
+          onPress={() =>
+            _handlePressButtonAsync(urlBuilder(item.hash, item.asset))
+          }
+          title={capitalizeFirstLetter(item.direction)}
+          caption={caption}
+          details={`${sign} ${item.value} ${item.asset}`}
+          icon={<Icon width={35} height={35} fill={theme.colors.white} />}
+        />
+      );
+    }
+    if(isTron){
+      const caption =
+        item.direction === "received"
+         ? `from ${truncateWalletAddress(item.from)}`
           : `To ${truncateWalletAddress(item.to)}`;
       return (
         <CryptoInfoCard
@@ -341,12 +401,14 @@ export default function Index() {
     dispatch(fetchEthereumTransactions({ address: ethWalletAddress }));
     dispatch(fetchSolanaTransactions(solWalletAddress));
     dispatch(fetchNeoTransactions({ address: neoWalletAddress }));
+    dispatch(fetchTronTransactions(tronWalletAddress));
   };
 
   const fetchTransactionsInterval = async () => {
     dispatch(fetchEthereumTransactionsInterval({ address: ethWalletAddress }));
     dispatch(fetchSolanaTransactionsInterval(solWalletAddress));
     dispatch(fetchNeoTransactionsInterval({ address: neoWalletAddress }));
+    dispatch(fetchTronTransactionsInterval(tronWalletAddress));
 
   };
 
@@ -361,14 +423,14 @@ export default function Index() {
   };
 
   const fetchAndUpdatePrices = async () => {
-    if (ethWalletAddress && solWalletAddress) {
+    if (ethWalletAddress && solWalletAddress&&tronWalletAddress) {
       await fetchBalanceAndPrice();
       await fetchTransactions();
     }
   };
 
   const fetchAndUpdatePricesInternal = async () => {
-    if (solBalance && ethBalance) {
+    if (solBalance && ethBalance&& tronBalance) {
       await fetchBalanceAndPriceInterval();
       await fetchTransactionsInterval();
     }
@@ -380,7 +442,7 @@ export default function Index() {
 
   useEffect(() => {
     fetchAndUpdatePrices();
-  }, [dispatch, ethWalletAddress, solWalletAddress]);
+  }, [dispatch, ethWalletAddress, solWalletAddress,tronWalletAddress]);
 
   useEffect(() => {
     const interval = setInterval(
@@ -389,20 +451,21 @@ export default function Index() {
     );
 
     return () => clearInterval(interval);
-  }, [dispatch, ethWalletAddress, solWalletAddress]);
+  }, [dispatch, ethWalletAddress, solWalletAddress, tronWalletAddress]);
 
   useEffect(() => {
     updatePrices();
-  }, [ethBalance, solBalance, ethWalletAddress, solWalletAddress]);
+  }, [ethBalance, solBalance, tronBalance, ethWalletAddress, solWalletAddress, tronWalletAddress]);
 
   useEffect(() => {
     // TODO: Sort these somewhere else
     const mergedAndSortedTransactions = [
       ...solTransactions,
       ...ethTransactions,
+      ...tronTransactions,
     ].sort((a, b) => b.blockTime - a.blockTime);
     setTransactions(mergedAndSortedTransactions);
-  }, [solTransactions, ethTransactions, ethWalletAddress, solWalletAddress]);
+  }, [solTransactions, ethTransactions,tronTransactions, ethWalletAddress, solWalletAddress,tronWalletAddress]);
 
   return (
     <SafeAreaContainer>
@@ -536,6 +599,17 @@ export default function Index() {
                   onPress={() => router.push(ROUTES.solDetails)}
                   title="Neo"
                   caption={`${solBalance} GAS`}
+                  details={formatDollar(solUsd)}
+                  icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
+                  hideBackground
+                />
+              </CardView>
+              <CardView>
+                ///////
+                <CryptoInfoCard
+                  onPress={() => router.push(ROUTES.solDetails)}
+                  title="Solana"
+                  caption={`${solBalance} SOL`}
                   details={formatDollar(solUsd)}
                   icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
                   hideBackground

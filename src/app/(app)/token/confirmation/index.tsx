@@ -11,6 +11,7 @@ import { LinearGradientBackground } from "../../../../components/Styles/Gradient
 import Loader from "../../../../components/Loader/CleanArcSpinner";
 import { confirmEthereumTransaction } from "../../../../store/ethereumSlice";
 import { confirmSolanaTransaction } from "../../../../store/solanaSlice";
+import { confirmTronTransaction } from "../../../../store/tronSlice";
 import { confirmNeoTransaction } from "../../../../store/neoSlice";
 import { ConfirmationState } from "../../../../store/types";
 import { RootState } from "../../../../store";
@@ -110,6 +111,13 @@ export default function Confirmation() {
       if (blockchain === Chains.Neo) {
         dispatch(
           confirmNeoTransaction({
+            txid: txHash as string,
+          })
+        );
+      }
+      if (blockchain === Chains.tron) {
+        dispatch(
+          confirmTronTransaction({
             txid: txHash as string,
           })
         );

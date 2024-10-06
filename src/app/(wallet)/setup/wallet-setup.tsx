@@ -14,6 +14,7 @@ import { ThemeType } from "../../../styles/theme";
 import { saveEthereumAddresses } from "../../../store/ethereumSlice";
 import { saveSolanaAddresses } from "../../../store/solanaSlice";
 import { saveNeoAddresses } from "../../../store/neoSlice";
+import { saveTronAddresses } from "../../../store/tronSlice";
 import { authenticate, isAuthEnrolled } from "../../../store/biometricsSlice";
 import type { AddressState } from "../../../store/types";
 import { GeneralStatus } from "../../../store/types";
@@ -21,6 +22,7 @@ import { ROUTES } from "../../../constants/routes";
 import WalletIcon from "../../../assets/svg/wallet.svg";
 import { LinearGradientBackground } from "../../../components/Styles/Gradient";
 import { RootState } from "../../../store";
+import tronService from "../../../services/TronService";
 
 const SafeAreaContainer = styled(SafeAreaView)<{ theme: ThemeType }>`
   flex: 1;
@@ -141,6 +143,7 @@ export default function WalletSetup() {
         masterMnemonicPhrase
       );
       const neoWallet = await neoService.restoreWalletFromPhrase(masterMnemonicPhrase);
+      const tronWallet = await tronService.restoreWalletFromPhrase(masterMnemonicPhrase);
 
       const ethereumAccount: AddressState = {
         accountName: "Account 1",
@@ -185,9 +188,25 @@ export default function WalletSetup() {
         status: GeneralStatus.Idle,
         transactionConfirmations: [],
       };
+      const tronAccount: AddressState = {
+        accountName: "Account 1",
+        derivationPath: `m/44'/195'/0'/0/0`,
+        address: tronWallet.address,
+        publicKey: tronWallet.publicKey,
+        balance: 0,
+        transactionMetadata: {
+          paginationKey: undefined,
+          transactions: [],
+        },
+        failedNetworkRequest: false,
+        status: GeneralStatus.Idle,
+        transactionConfirmations: [],
+      };
+
       dispatch(saveEthereumAddresses([ethereumAccount]));
       dispatch(saveSolanaAddresses([solanaAccount]));
       dispatch(saveNeoAddresses([neoAccount]));
+      dispatch(saveTronAddresses([tronAccount]));
 
 
       router.push({

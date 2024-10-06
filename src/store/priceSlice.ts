@@ -31,6 +31,9 @@ export interface CryptoPrices {
   neo: {  // Add neo here
     usd: number;
   };
+  tron: {  // Add tron here
+    usd: number;
+  };
 }
 
 export interface PriceState {
@@ -48,6 +51,9 @@ const initialState = {
       usd: 0,
     },
     neo: {  // Add neo initialization here
+      usd: 0,
+    },
+    tron: {  // Add neo initialization here
       usd: 0,
     },
   },

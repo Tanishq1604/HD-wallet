@@ -50,3 +50,35 @@ export const selectNeoBalance = (state: RootState) => {
   const activeIndex = selectActiveNeoIndex(state);
   return state.neo.addresses[activeIndex]?.balance ?? "0";
 };
+
+// Tron selectors
+export const selectActiveTronIndex = (state: RootState) =>
+  state.tron.activeIndex ?? 0;
+
+export const selectActiveTronAddress = (state: RootState) => {
+  const activeIndex = selectActiveTronIndex(state);
+  return state.tron.addresses[activeIndex]?.address ?? "";
+};
+
+export const selectTronAddresses = (state: RootState) =>
+  state.tron.addresses;
+
+export const selectTronBalance = (state: RootState) => {
+  const activeIndex = selectActiveTronIndex(state);
+  return state.tron.addresses[activeIndex]?.balance ?? 0;
+};
+
+export const selectTronTransactions = (state: RootState) => {
+  const activeIndex = selectActiveTronIndex(state);
+  return state.tron.addresses[activeIndex]?.transactionMetadata.transactions ?? [];
+};
+
+export const selectTronTransactionConfirmations = (state: RootState) => {
+  const activeIndex = selectActiveTronIndex(state);
+  return state.tron.addresses[activeIndex]?.transactionConfirmations ?? [];
+};
+
+export const selectTronStatus = (state: RootState) => {
+  const activeIndex = selectActiveTronIndex(state);
+  return state.tron.addresses[activeIndex]?.status;
+};
