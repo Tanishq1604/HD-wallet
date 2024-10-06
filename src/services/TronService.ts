@@ -131,28 +131,62 @@ class TronService {
       throw new Error("Failed to send transaction. Please try again later.");
     }
   }
-
   async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
-    try {
-        
-      const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', params.limit);
-      const transformTransactions = (txs: any[]) =>
-        txs.map((tx: any) => ({
-          ...tx,
-          uniqueId: uuid.v4(),
-          value: this.tronWeb.fromSun(tx.amount), // Convert SUN to TRX
-          blockTime: tx.block_timestamp,
-          direction: tx.from === address ? "sent" : "received",
-        }));
+  const maxRetries = 3;
+   let attempts = 0;
 
-      const allTransactions = transformTransactions(transactions);
-      return {
-        transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
-      };
-    } catch (error) {
-      console.error("failed to fetch transaction history", error);
-    }
-  }
+   const fetchWithRetry = async () => {
+     try {
+       const limit = params?.limit || 30;
+       const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', limit);
+       const transformTransactions = (txs: any[]) =>
+         txs.map((tx: any) => ({
+           ...tx,
+           uniqueId: uuid.v4(),
+           value: this.tronWeb.fromSun(tx.amount),
+           blockTime: tx.block_timestamp,
+           direction: tx.from === address ? "sent" : "received",
+         }));
+
+       const allTransactions = transformTransactions(transactions);
+       return {
+         transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
+       };
+     } catch (error) {
+       if (attempts < maxRetries) {
+         attempts++;
+         console.warn(`Attempt ${attempts} failed, retrying...`);
+         return fetchWithRetry(); // Retry
+       } else {
+         console.error("Failed to fetch transaction history after multiple attempts", error);
+         throw error;
+       }
+     }
+   };
+   
+   return fetchWithRetry();
+}
+  // async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
+  //   try {
+        
+  //     const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', params.limit);
+  //     const transformTransactions = (txs: any[]) =>
+  //       txs.map((tx: any) => ({
+  //         ...tx,
+  //         uniqueId: uuid.v4(),
+  //         value: this.tronWeb.fromSun(tx.amount), // Convert SUN to TRX
+  //         blockTime: tx.block_timestamp,
+  //         direction: tx.from === address ? "sent" : "received",
+  //       }));
+
+  //     const allTransactions = transformTransactions(transactions);
+  //     return {
+  //       transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
+  //     };
+  //   } catch (error) {
+  //     console.error("failed to fetch transaction history", error);
+  //   }
+  // }
 
   validateAddress(address: string): boolean {
     return this.tronWeb.utils.address.isAddress(address);

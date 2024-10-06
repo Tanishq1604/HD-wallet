@@ -241,7 +241,7 @@ export default function Index() {
 
   const urlBuilder = (hash: string) => {
     let url: string;
-
+    console.log(hash)
     if (chainName === Chains.Ethereum) {
       url = `https://sepolia.etherscan.io/tx/${hash}`;
     } else if (chainName === Chains.Solana) {

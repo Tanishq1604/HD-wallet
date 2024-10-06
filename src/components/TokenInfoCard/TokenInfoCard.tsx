@@ -86,13 +86,17 @@ const TokenInfoCard: React.FC<TokenInfoCardProps> = ({
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
+  const tronPrice = prices.tron.usd;
 
   const findTokenPrice = (tokenSymbol: string) => {
     if (tokenSymbol === "ETH") {
       return ethPrice;
     } else if (tokenSymbol === "SOL") {
       return solPrice;
-    } else {
+    } else if (tokenSymbol === "TRON") {
+      return tronPrice;
+    }
+    else {
       return 0;
     }
   };

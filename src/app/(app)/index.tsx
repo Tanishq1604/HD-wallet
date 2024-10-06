@@ -259,10 +259,10 @@ export default function Index() {
       setSolUsd(solUsd);
       settronUsd(tronUsd);
     }
-    if (tronWalletAddress) {
-      const tronUsd = tronPrice * tronBalance;
-      settronUsd(tronUsd);
-    }
+    // if (tronWalletAddress) {
+    //   const tronUsd = tronPrice * tronBalance;
+    //   settronUsd(tronUsd);
+    // }
   };
 
   const _handlePressButtonAsync = async (url: string) => {

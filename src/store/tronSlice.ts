@@ -226,6 +226,9 @@ export const tronSlice = createSlice({
       })
       .addCase(fetchTronTransactions.rejected, (state, action) => {
         state.addresses[state.activeIndex].status = GeneralStatus.Failed;
+        console.log("###############")
+        console.log(state.addresses[state.activeIndex])
+        console.log("###############")
         console.error("Failed to fetch transactions:", action.payload);
       })
       .addCase(fetchTronTransactionsInterval.fulfilled, (state, action) => {
@@ -240,6 +243,9 @@ export const tronSlice = createSlice({
       })
       .addCase(fetchTronTransactionsInterval.rejected, (state, action) => {
         state.addresses[state.activeIndex].status = GeneralStatus.Failed;
+        console.log("############### -2-2-22")
+        console.log(state.addresses[state.activeIndex])
+        console.log("###############-2-2-2-2")
         console.error("Failed to fetch transactions:", action.payload);
       })
       .addCase(confirmTronTransaction.pending, (state, action) => {

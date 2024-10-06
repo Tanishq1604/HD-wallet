@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const fetchCryptoPrices = async (ids = ["solana", "ethereum"]) => {
+export const fetchCryptoPrices = async (ids = ["solana", "ethereum","tron"]) => {
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price",
