@@ -42,10 +42,10 @@ class TronService {
 
   async createWallet(): Promise<ExtendedHDWallet> {
     try {
-      const account = this.tronWeb.utils.accounts.generateAccount();
+      const account = await this.tronWeb.createAccount();
       console.log(account)
-      const address = this.tronWeb.utils.address.fromPrivateKey(account.privateKey);
-      console.log("createWallet")
+
+      const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
       if(address==false){
         throw new Error("Failed to generate Tron address");
       }
@@ -71,12 +71,18 @@ class TronService {
 
     try {
       
-      const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(mnemonicPhrase);
+// <<<<<<< HEAD
+//       const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(mnemonicPhrase);
+//       const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
+//       console.log("restoreWalletFromPhrase")
+// =======
+      const account = this.tronWeb.fromMnemonic(mnemonicPhrase);
+      console.log(account)
       const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
-      console.log("restoreWalletFromPhrase")
       if(address==false){
         throw new Error("Failed to generate Tron address");
       }
+     
       return {
         address,
         privateKey: account.privateKey,
