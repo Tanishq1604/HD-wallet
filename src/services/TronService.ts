@@ -33,7 +33,7 @@ class TronService {
     private apiKey: string
   ) {
     //@ts-ignore
-    this.tronWeb = new TronWeb({
+    this.tronWeb =TronWeb({
       fullHost: fullNode,
       solidityNode: solidityNode,
       eventServer: eventServer,
@@ -219,6 +219,58 @@ class TronService {
       return false;
     }
   }
+  async calculateTransactionFee(from: string, to: string, amount: number): Promise<number> {
+    try {
+      // Create an unsigned transaction
+      //@ts-ignore
+      const transaction = await this.tronWeb.TransactionBuilder.sendTrx(to, amount, from);
+      
+      // Estimate the energy (CPU) and bandwidth consumption
+      //@ts-ignore
+      const estimatedEnergy = await this.tronWeb.TransactionBuilder.estimateEnergy(transaction);//@ts-ignore
+      const estimatedBandwidth = await this.tronWeb.TransactionBuilder.estimateBandwidth(transaction);
+      
+      // Get the current energy and bandwidth prices
+      //@ts-ignore
+      const chainParameters = await this.tronWeb.Trx.getChainParameters();
+      const energyFee = chainParameters.find((param: any) => param.key === 'getEnergyFee').value;
+      const bandwidthFee = chainParameters.find((param: any) => param.key === 'getTransactionFee').value;
+
+      // Calculate the total fee
+      const totalFee = (estimatedEnergy * energyFee) + (estimatedBandwidth * bandwidthFee);
+
+      // Convert SUN to TRX
+      const fee= this.tronWeb.TronWeb.fromSun(totalFee);
+      if(typeof fee === 'string'){
+
+        return Number(fee);
+      }
+      throw new Error("Error in calculating fee") // Convert SUN to TRX
+    } catch (error) {
+      console.error("Error calculating Tron transaction fee:", error);
+      throw new Error("Failed to calculate transaction fee. Please try again later.");
+    }
+  }
+  async derivePrivateKeysFromPhrase(
+    mnemonicPhrase: string,
+    derivationPath: string
+  ): Promise<string> {
+    if (!mnemonicPhrase) {
+      throw new Error("Empty mnemonic phrase");
+    }
+
+    if (!validateMnemonic(mnemonicPhrase)) {
+      throw new Error("Invalid mnemonic phrase");
+    }
+
+    try {
+      const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(mnemonicPhrase, derivationPath);
+      return account.privateKey;
+    } catch (error) {
+      throw new Error("Failed to derive wallet from mnemonic: " + (error as Error).message);
+    }
+  }
+
 }
 
 const tronService = new TronService(

@@ -31,6 +31,7 @@ export enum Chains {
   Ethereum = "ethereum",
   Solana = "solana",
   Neo = "neo",
+  Tron = "tron",
 }
 
 type BlockTime = number;

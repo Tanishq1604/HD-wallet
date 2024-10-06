@@ -11,7 +11,7 @@ import Neo from "../../../../assets/svg/solana.svg";
 import CopyIcon from "../../../../assets/svg/copy.svg";
 import QRCodeIcon from "../../../../assets/svg/qr-code.svg";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
-
+import TronIcon from "../../../../../assets/tron.svg";
 const ContentContainer = styled.View<{ theme: ThemeType }>`
   flex: 1;
   justify-content: flex-start;
@@ -118,6 +118,9 @@ export default function ReceiveOptionsPage() {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
+  const activeTronIndex = useSelector(
+    (state: RootState) => state.tron.activeIndex
+  )
   const activeNeoIndex = useSelector(
     (state: RootState) => state.neo.activeIndex
   );
@@ -129,6 +132,9 @@ export default function ReceiveOptionsPage() {
   );
   const neoAddress = useSelector(
     (state: RootState) => state.neo.addresses[activeSolIndex].address
+  );
+  const tronAddress = useSelector(
+    (state: RootState) => state.tron.addresses[activeTronIndex].address
   );
 
   return (
@@ -148,6 +154,11 @@ export default function ReceiveOptionsPage() {
           chainName="Neo"
           address={solAddress}
           icon={<Neo width={25} height={25} />}
+        />
+        <ReceiveCard
+          chainName="Tron"
+          address={tronAddress}
+          icon={<TronIcon width={25} height={25} />}
         />
       </ContentContainer>
     </SafeAreaContainer>

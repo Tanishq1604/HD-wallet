@@ -9,6 +9,7 @@ import { formatDollar } from "../../../../utils/formatDollars";
 import CryptoInfoCard from "../../../../components/CryptoInfoCard/CryptoInfoCard";
 import SolanaIcon from "../../../../assets/svg/solana.svg";
 import EthereumIcon from "../../../../assets/svg/ethereum.svg";
+import TronIcon from "../../../../../assets/tron.svg"
 import NeoIcon from "../../../../assets/svg/ethereum.svg";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 
@@ -33,6 +34,9 @@ export default function SendOptions() {
   const activeSolIndex = useSelector(
     (state: RootState) => state.solana.activeIndex
   );
+  const activeTronIndex = useSelector(
+    (state: RootState) => state.tron.activeIndex
+  );
   const activeNeoIndex = useSelector(
     (state: RootState) => state.neo.activeIndex
   );
@@ -45,27 +49,34 @@ export default function SendOptions() {
   const neoBalance = useSelector(
     (state: RootState) => state.neo.addresses[activeSolIndex].balance
   );
+  const tronBalance = useSelector(
+    (state: RootState) => state.tron.addresses[activeTronIndex].balance
+  );
   const prices = useSelector((state: RootState) => state.price.data);
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
   const neoPrice = prices.neo.usd;
+  const tronPrice = prices.tron.usd;
 
   const [solUsd, setSolUsd] = useState(0);
   const [ethUsd, setEthUsd] = useState(0);
   const [neoUsd, setNeoUsd] = useState(0);
+  const [tronUsd, setTronUsd] = useState(0);
 
   useEffect(() => {
     const fetchPrices = async () => {
       const ethUsd = ethPrice * ethBalance;
       const solUsd = solPrice * solBalance;
       const neoUsd = neoPrice * neoBalance;
+      const tronUsd = tronPrice * tronBalance;
 
       setEthUsd(ethUsd);
       setSolUsd(solUsd);
       setNeoUsd(neoUsd);
+      setTronUsd(tronUsd);
     };
     fetchPrices();
-  }, [ethBalance, solBalance,neoBalance]);
+  }, [ethBalance, solBalance,neoBalance,tronBalance]);
 
   return (
     <SafeAreaContainer>
@@ -99,6 +110,16 @@ export default function SendOptions() {
             icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
           />
         </CardView>
+        <CardView>
+          <CryptoInfoCard
+            onPress={() => router.push("/token/send/tron")}
+            title="Tron"
+            caption={`${tronBalance} Trx`}
+            details={formatDollar(solUsd)}
+            icon={<TronIcon width={25} height={25} fill="#14F195" />}
+          />
+        </CardView>
+
       </ContentContainer>
     </SafeAreaContainer>
   );

@@ -47,7 +47,7 @@ import CryptoInfoCard from "../../components/CryptoInfoCard/CryptoInfoCard";
 import CryptoInfoCardSkeleton from "../../components/CryptoInfoCard/CryptoInfoCardSkeleton";
 import SolanaIcon from "../../assets/svg/solana.svg";
 import NeoIcon from "../../assets/svg/solana.svg";
-import TronIcon from "../../assets/svg/tron.svg";
+import TronIcon from "../../../assets/tron.svg";
 import EthereumPlainIcon from "../../assets/svg/ethereum_plain.svg";
 import EthereumIcon from "../../assets/svg/ethereum.svg";
 import { FETCH_PRICES_INTERVAL } from "../../constants/price";

@@ -25,6 +25,8 @@ import { sendNeoTransaction } from "../../../../store/neoSlice";
 import { BalanceContainer } from "../../../../components/Styles/Layout.styles";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 import { ROUTES } from "../../../../constants/routes";
+import tronService from "../../../../services/TronService";
+import { sendTronTransaction } from "../../../../store/tronSlice";
 
 const ContentContainer = styled.View<{ theme: ThemeType }>`
   flex: 1;
@@ -111,6 +113,9 @@ export default function SendConfirmationPage() {
   const activeNeoIndex = useSelector(
     (state: RootState) => state.neo.activeIndex
   );
+  const activeTronIndex= useSelector(
+    (state: RootState) => state.tron.activeIndex
+  );
   const walletAddress = useSelector(
     (state: RootState) => state[chainName].addresses[activeEthIndex].address
   );
@@ -122,6 +127,7 @@ export default function SendConfirmationPage() {
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
   const neoPrice = prices.neo.usd;
+  const tronPrice = prices.tron.usd;
 
   const [transactionFeeEstimate, setTransactionFeeEstimate] = useState("0.00");
   const [totalCost, setTotalCost] = useState("0.00");
@@ -133,17 +139,17 @@ export default function SendConfirmationPage() {
 
   const handleSubmit = async () => {
     const seedPhrase = await getPhrase();
-
+  
     setLoading(true);
     setBtnDisabled(true);
-
+  
     try {
       if (chainName === Chains.Ethereum) {
         const ethPrivateKey = await ethService.derivePrivateKeysFromPhrase(
           seedPhrase,
           derivationPath
         );
-
+  
         const result = await dispatch(
           sendEthereumTransaction({
             address,
@@ -158,6 +164,27 @@ export default function SendConfirmationPage() {
             params: { txHash: result.hash, blockchain: Chains.Ethereum },
           });
         }
+      } else if (chainName === Chains.Tron) {
+        const tronPrivateKey = await tronService.derivePrivateKeysFromPhrase(
+          seedPhrase,
+          derivationPath
+        );
+    
+        const result = await dispatch(
+          sendTronTransaction({
+            privateKey: tronPrivateKey,
+            address,
+            amount: Number(amount),
+          })
+        ).unwrap();
+    
+        if (result && result.result) {
+          navigation.dispatch(StackActions.popToTop());
+          router.push({
+            pathname: ROUTES.confirmation,
+            params: { txHash: result.txid, blockchain: Chains.Tron },
+          });
+        }
       } else if (chainName === Chains.Solana) {
         const solPrivateKey = await solanaService.derivePrivateKeysFromPhrase(
           seedPhrase,
@@ -170,7 +197,7 @@ export default function SendConfirmationPage() {
             amount,
           })
         ).unwrap();
-
+  
         if (result) {
           navigation.dispatch(StackActions.popToTop());
           router.push({
@@ -178,7 +205,7 @@ export default function SendConfirmationPage() {
             params: { txHash: result, blockchain: Chains.Solana },
           });
         }
-      }else if (chainName === Chains.Neo) {
+      } else if (chainName === Chains.Neo) {
         const neoPrivateKey = await neoService.derivePrivateKeysFromPhrase(
           seedPhrase,
           derivationPath
@@ -186,7 +213,7 @@ export default function SendConfirmationPage() {
         const result = await dispatch(
           sendNeoTransaction({
             privateKey: neoPrivateKey,
-            toAddress: address,  // Change 'address' to 'toAddress'
+            toAddress: address,
             amount,
             assetId: '0xd2a4cff31913016155e38e474a2c06d08be276cf', // Replace with actual NEO or GAS asset ID
           })
@@ -210,7 +237,7 @@ export default function SendConfirmationPage() {
   };
 
   const calculateTransactionCosts = async () => {
-    const chainPrice = chainName === Chains.Ethereum ? ethPrice : solPrice;
+    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice : neoPrice;
     try {
       if (chainName === Chains.Ethereum) {
         const { gasEstimate, totalCost, totalCostMinusGas } =
@@ -268,7 +295,38 @@ export default function SendConfirmationPage() {
           setError("");
           setBtnDisabled(false);
         }
-      }else if (chainName === Chains.Neo) {
+      }
+      else if (chainName === Chains.Tron) {
+        const transactionFeeTrx = await tronService.calculateTransactionFee(
+          walletAddress,
+          address,
+          parseFloat(amount)
+        );
+  
+        const txFeeFloat = transactionFeeTrx * chainPrice;
+        const txFeeEstimateUsd = formatDollar(txFeeFloat);
+        const totalCostPlusTxFeeUsd = formatDollar((parseFloat(amount) + transactionFeeTrx) * chainPrice);
+  
+        if (txFeeFloat > 0 && txFeeFloat < 0.01) {
+          setTransactionFeeEstimate(`< ${txFeeEstimateUsd}`);
+        } else {
+          setTransactionFeeEstimate(txFeeEstimateUsd);
+        }
+  
+        setTotalCost(totalCostPlusTxFeeUsd);
+  
+        const balance = await tronService.getBalance(walletAddress);
+        const availableBalance = parseFloat(balance);
+  
+        if (parseFloat(amount) + transactionFeeTrx > availableBalance) {
+          setError("Not enough funds to send transaction.");
+          setBtnDisabled(true);
+        } else {
+          setError("");
+          setBtnDisabled(false);
+        }
+      }
+      else if (chainName === Chains.Neo) {
         const networkFee = await neoService.calculateNetworkFee(address, amount);
         const assetId = 'neo-asset-id'; // Replace with actual NEO or GAS asset ID
         const balance = await neoService.getBalance(walletAddress);

@@ -13,6 +13,7 @@ import type { RootState } from "../../../../store";
 import { Chains } from "../../../../types";
 import SolanaIcon from "../../../../assets/svg/solana.svg";
 import EthereumIcon from "../../../../assets/svg/ethereum_plain.svg";
+import TronIcon from "../../../../../assets/tron.svg";
 import NeoIcon from "../../../../assets/svg/ethereum_plain.svg";
 import { capitalizeFirstLetter } from "../../../../utils/capitalizeFirstLetter";
 import { formatDollar } from "../../../../utils/formatDollars";
@@ -23,6 +24,7 @@ import Button from "../../../../components/Button/Button";
 import { SafeAreaContainer } from "../../../../components/Styles/Layout.styles";
 import { chain } from "lodash";
 import {  u } from "@cityofzion/neon-core";
+import tronService from "../../../../services/TronService";
 
 type FormikChangeHandler = {
   (e: ChangeEvent<any>): void;
@@ -183,6 +185,9 @@ export default function SendPage() {
   const activeNeoIndex = useSelector(
     (state: RootState) => state.neo.activeIndex
   );
+  const activeTronIndex= useSelector(
+    (state: RootState) => state.tron.activeIndex
+  );
   const tokenBalance = useSelector(
     (state: RootState) => state[chainName].addresses[activeEthIndex].balance
   );
@@ -193,6 +198,7 @@ export default function SendPage() {
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
   const neoPrice = prices.neo.usd;
+  const tronPrice = prices.tron.usd;
 
   const [isAddressInputFocused, setIsAddressInputFocused] = useState(false);
   const [isAmountInputFocused, setIsAmountInputFocused] = useState(false);
@@ -220,6 +226,8 @@ export default function SendPage() {
         return <SolanaIcon width={45} height={45} />;
       case Chains.Ethereum:
         return <EthereumIcon width={45} height={45} />;
+      case Chains.Tron:
+        return <TronIcon width={45} height={45} />;
       case Chains.Neo:
         return <EthereumIcon width={45} height={45} />;
       default:
@@ -229,7 +237,7 @@ export default function SendPage() {
 
   const renderDollarAmount = (amountValue: string) => {
     if (amountValue === "") return formatDollar(0);
-    const chainPrice = chainName === Chains.Ethereum ? ethPrice : solPrice;
+    const chainPrice = chainName === Chains.Ethereum ? ethPrice : chainName === Chains.Solana ? solPrice : chainName === Chains.Tron ? tronPrice : neoPrice;
     const USDAmount = chainPrice * parseFloat(amountValue);
     return formatDollar(USDAmount);
   };
@@ -273,7 +281,13 @@ export default function SendPage() {
   const validateAddress = async (address: string): Promise<boolean> => {
     return chainName === Chains.Ethereum
       ? ethService.validateAddress(address)
-      : await solanaService.validateAddress(address);
+      : chainName === Chains.Solana 
+      ? solanaService.validateAddress(address)
+      : chainName === Chains.Tron
+      ? tronService.validateAddress(address)
+      : chainName === Chains.Neo
+      ? neoService.validateAddress(address)
+      : false;
   };
 
   const validateFunds = async (
@@ -301,7 +315,15 @@ export default function SendPage() {
       if (totalCostMinusGas > tokenBalance) {
         errors.amount = "Insufficient funds for amount plus gas costs";
       }
-    } else if (chainName === Chains.Solana) {
+    }
+    else if (chainName === Chains.Tron) {
+      const transactionFee = await tronService.calculateTransactionFee(address,toAddress, amount);
+      const totalCost = amount + transactionFee;
+      if (totalCost > tokenBalance) {
+        errors.amount = "Insufficient funds for amount plus transaction fees";
+      }
+    }
+     else if (chainName === Chains.Solana) {
       const transactionFeeLamports =
         await solanaService.calculateTransactionFee(address, toAddress, amount);
 
@@ -331,6 +353,8 @@ export default function SendPage() {
         ? ethService.validateAddress(toAddress)
         : chainName === Chains.Solana
         ? await solanaService.validateAddress(toAddress)
+        : chainName === Chains.Tron
+        ? tronService.validateAddress(toAddress)
         : chainName === Chains.Neo
         ? await neoService.validateAddress(toAddress)  // Add Neo validation here
         : false; 
@@ -349,7 +373,17 @@ export default function SendPage() {
           tokenBalance
         );
         setFieldValue("amount", totalCostMinusGas);
-      } else if (chainName === Chains.Solana) {
+      }
+      else if (chainName === Chains.Tron) {
+        const transactionFee = await tronService.calculateTransactionFee(
+          address,
+          toAddress,
+          parseFloat(tokenBalance)
+        );
+        const totalCost = parseFloat(tokenBalance) + transactionFee;
+        setFieldValue("amount", totalCost.toString());
+      }
+       else if (chainName === Chains.Solana) {
         const totalBalanceLamports =
           parseFloat(tokenBalance) * LAMPORTS_PER_SOL;
         const transactionFeeLamports =

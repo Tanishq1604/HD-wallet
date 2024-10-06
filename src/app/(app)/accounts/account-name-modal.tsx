@@ -8,6 +8,7 @@ import type { RootState } from "../../../store";
 import type { AddressState } from "../../../store/types";
 import { updateAccountName } from "../../../store/ethereumSlice";
 import { updateSolanaAccountName } from "../../../store/solanaSlice";
+import { updateTronAccountName } from "../../../store/tronSlice";
 import { updateNeoAccountName } from "../../../store/neoSlice";
 import { SafeAreaContainer } from "../../../components/Styles/Layout.styles";
 import {
@@ -40,7 +41,7 @@ const AccountInput = styled.TextInput<{
 const AccountsNameModal = () => {
   const theme = useTheme();
   const dispatch = useDispatch();
-  const { ethAddress, solAddress,neoAddress } = useLocalSearchParams();
+  const { ethAddress, solAddress,neoAddress,tronAddress } = useLocalSearchParams();
 
   const ethereumAccount = useSelector((state: RootState) =>
     state.ethereum.addresses.find(
@@ -57,7 +58,12 @@ const AccountsNameModal = () => {
       (item: AddressState) => item.address === neoAddress
     )
   );
-  const name = ethereumAccount.accountName ?? solanaAccount.accountName;
+  const tronAccount = useSelector((state: RootState) =>
+    state.tron.addresses.find(
+      (item: AddressState) => item.address === tronAddress
+    )
+  );
+  const name = ethereumAccount.accountName ?? solanaAccount.accountName ?? tronAccount.accountName ?? neoAccount.accountName;
   const [accountNameValue, setAccountNameValue] = useState(name);
   const [isWalletNameFocused, setWalletNameFocused] = useState(false);
   const [errorText, setErrorText] = useState("");
@@ -78,6 +84,12 @@ const AccountsNameModal = () => {
       updateAccountName({
         accountName: accountNameValue,
         ethAddress: ethereumAccount.address,
+      })
+    );
+    dispatch(
+      updateTronAccountName({
+        accountName: accountNameValue,
+        tronAddress: tronAccount.address,
       })
     );
     dispatch(

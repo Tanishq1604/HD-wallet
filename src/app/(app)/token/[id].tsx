@@ -13,6 +13,13 @@ import {
   fetchEthereumTransactionsInterval,
   fetchEthereumBalanceInterval,
 } from "../../../store/ethereumSlice";
+//for tron
+import {
+  fetchTronBalance,
+  fetchTronTransactions,
+  fetchTronTransactionsInterval,
+  fetchTronBalanceInterval,
+} from "../../../store/tronSlice"
 import {
   fetchSolanaBalance,
   fetchSolanaTransactions,
@@ -37,6 +44,7 @@ import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import SendIcon from "../../../assets/svg/send.svg";
 import ReceiveIcon from "../../../assets/svg/receive.svg";
 import SolanaIcon from "../../../assets/svg/solana.svg";
+import TronIcon from "../../../../assets/tron.svg";
 import EthereumIcon from "../../../assets/svg/ethereum_plain.svg";
 import NeoIcon from "../../../assets/svg/ethereum_plain.svg";
 import TokenInfoCard from "../../../components/TokenInfoCard/TokenInfoCard";
@@ -208,6 +216,7 @@ export default function Index() {
   const solPrice = prices.solana.usd;
   const ethPrice = prices.ethereum.usd;
   const neoPrice = prices.neo.usd;
+  const tronPrice= prices.tron.usd;
 
   const [usdBalance, setUsdBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -217,8 +226,9 @@ export default function Index() {
   const ticker = TICKERS[chainName];
   const isSolana = chainName === Chains.Solana;
   const isEthereum = chainName === Chains.Ethereum;
+  const isTron = chainName === Chains.Tron; // Add check for Tron
   const isNeo = chainName === Chains.Neo; // Add check for Neo
-  const Icon = isSolana ? SolanaIcon : isEthereum ? EthereumIcon : isNeo ? NeoIcon : EthereumIcon;
+  const Icon = isSolana ? SolanaIcon : isEthereum ? EthereumIcon : isTron? TronIcon: isNeo ? NeoIcon : EthereumIcon;
 
 
   const fetchAndUpdatePrices = async () => {
@@ -245,7 +255,10 @@ export default function Index() {
       url = `https://sepolia.etherscan.io/tx/${hash}`;
     } else if (chainName === Chains.Solana) {
       url = `https://explorer.solana.com/tx/${hash}`;
-    } else {
+    }else if (chainName===Chains.Tron){
+      url = `https://tronscan.org/#/transaction/${hash}`;
+    } 
+    else {
       url = `https://xt4scan.ngd.network/address/${hash}`;
     }
     return url;
@@ -289,6 +302,17 @@ export default function Index() {
         />
       );
     }
+    if(isTron){
+      return (
+        <CryptoInfoCard
+          onPress={() => _handlePressButtonAsync(urlBuilder(item.hash))}
+          title={capitalizeFirstLetter(item.direction)}
+          caption={`To ${truncateWalletAddress(item.to)}`}
+          details={`${sign} ${item.value} ${item.asset}`}
+          icon={<Icon width={35} height={35} fill={theme.colors.white} />}
+        />
+      );
+    }
     if (isNeo) {
       return (
         <CryptoInfoCard
@@ -314,6 +338,11 @@ export default function Index() {
       const usd = solPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
+    if (chainName === Chains.Tron) {
+      dispatch(fetchTronTransactions(tokenAddress));
+      const usd = tronPrice * currentTokenBalance;
+      setUsdBalance(usd);
+    }
     if (chainName === Chains.Neo) {
       dispatch(fetchNeoTransactions(tokenAddress));
       const usd = solPrice * currentTokenBalance;
@@ -325,6 +354,11 @@ export default function Index() {
     if (chainName === Chains.Ethereum) {
       dispatch(fetchEthereumTransactionsInterval({ address: tokenAddress }));
       const usd = ethPrice * currentTokenBalance;
+      setUsdBalance(usd);
+    }
+    if(chainName=== Chains.Tron){
+      dispatch(fetchTronTransactionsInterval(tokenAddress));
+      const usd = tronPrice * currentTokenBalance;
       setUsdBalance(usd);
     }
 
@@ -348,6 +382,9 @@ export default function Index() {
     if (isEthereum && tokenAddress) {
       dispatch(fetchEthereumBalance(tokenAddress));
     }
+    if (isTron && tokenAddress) {
+      dispatch(fetchTronBalance(tokenAddress));
+    }
     if (isNeo && tokenAddress) {
       dispatch(fetchNeoBalance(tokenAddress));
     }
@@ -360,6 +397,9 @@ export default function Index() {
 
     if (isEthereum && tokenAddress) {
       dispatch(fetchEthereumBalanceInterval(tokenAddress));
+    }
+    if (isTron && tokenAddress) {
+      dispatch(fetchTronBalanceInterval(tokenAddress));
     }
     if (isNeo && tokenAddress) {
       dispatch(fetchNeoBalanceInterval(tokenAddress));
@@ -402,7 +442,7 @@ export default function Index() {
     return () => {
       clearInterval(intervalId);
     };
-  }, [dispatch, tokenBalance, ethPrice, solPrice, chainName, tokenAddress]);
+  }, [dispatch, tokenBalance, ethPrice, solPrice, tronPrice,chainName, tokenAddress]);
 
   useEffect(() => {
     if (failedNetworkRequest) {

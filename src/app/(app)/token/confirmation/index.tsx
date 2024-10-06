@@ -115,10 +115,10 @@ export default function Confirmation() {
           })
         );
       }
-      if (blockchain === Chains.tron) {
+      if (blockchain === Chains.Tron) {
         dispatch(
           confirmTronTransaction({
-            txid: txHash as string,
+            txHash: txHash as string,
           })
         );
       }
