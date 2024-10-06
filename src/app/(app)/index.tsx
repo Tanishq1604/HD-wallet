@@ -152,18 +152,18 @@ export default function Index() {
     (state: RootState) => state.tron.activeIndex
   );
   const tronWalletAddress = useSelector(
-    (state: RootState) => state.tron.addresses[activeEthIndex].address
+    (state: RootState) => state.tron.addresses[activeTronIndex].address
   );
   const tronBalance = useSelector(
-    (state: RootState) => state.tron.addresses[activeEthIndex].balance
+    (state: RootState) => state.tron.addresses[activeTronIndex].balance
   );
   const tronTransactions = useSelector(
     (state: RootState) =>
-      state.tron.addresses[activeEthIndex].transactionMetadata.transactions
+      state.tron.addresses[activeTronIndex].transactionMetadata.transactions
   );
   const failedtronStatus = useSelector(
     (state: RootState) =>
-      state.tron.addresses[activeEthIndex].status === GeneralStatus.Failed
+      state.tron.addresses[activeTronIndex].status === GeneralStatus.Failed
   );
 
 

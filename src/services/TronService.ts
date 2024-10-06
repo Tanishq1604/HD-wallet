@@ -227,8 +227,10 @@ class TronService {
       
       // Estimate the energy (CPU) and bandwidth consumption
      
-      const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
-      const estimatedBandwidth = await this.tronWeb.transactionBuilder.estimateBandwidth(transaction);
+      // const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
+      const estimatedEnergy = 50000;
+      // const estimatedBandwidth = await this.tronWeb.trx.getBandwidth(transaction);
+      const estimatedBandwidth = 100;
       
       // Get the current energy and bandwidth prices
       
