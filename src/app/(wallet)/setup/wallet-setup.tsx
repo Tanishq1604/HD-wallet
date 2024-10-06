@@ -144,6 +144,7 @@ export default function WalletSetup() {
       );
       const neoWallet = await neoService.restoreWalletFromPhrase(masterMnemonicPhrase);
       const tronWallet = await tronService.restoreWalletFromPhrase(masterMnemonicPhrase);
+      // const tronWallet = await tronService.createWallet();
 
       const ethereumAccount: AddressState = {
         accountName: "Account 1",
