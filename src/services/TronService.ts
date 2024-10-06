@@ -1,4 +1,4 @@
-import TronWeb from 'tronweb';
+import {TronWeb} from 'tronweb';
 import { validateMnemonic } from 'bip39';
 import uuid from 'react-native-uuid';
 
@@ -24,7 +24,7 @@ interface AssetTransferParams {
 }
 
 class TronService {
-  private tronWeb: typeof TronWeb;
+  private tronWeb: TronWeb;
 
   constructor(
     private fullNode: string,
@@ -32,8 +32,7 @@ class TronService {
     private eventServer: string,
     private apiKey: string
   ) {
-    //@ts-ignore
-    this.tronWeb =TronWeb({
+    this.tronWeb =new TronWeb({
       fullHost: fullNode,
       solidityNode: solidityNode,
       eventServer: eventServer,
@@ -109,13 +108,14 @@ class TronService {
   async sendTransaction(toAddress: string, privateKey: string, amount: number): Promise<SendTransactionResponse> {
     try {
       const fromAddress = this.tronWeb.utils.address.fromPrivateKey(privateKey);
-      //@ts-ignore
-      const unSignedTxn = await this.tronWeb.TransactionBuilder.sendTrx(toAddress, amount, fromAddress);//@ts-ignore
-      const signedTxn = await this.tronWeb.Trx.sign(unSignedTxn, privateKey);//@ts-ignore
-      const result = await this.tronWeb.Trx.sendRawTransaction(signedTxn);
+
+      
+      const unSignedTxn = await this.tronWeb.transactionBuilder.sendTrx(toAddress, amount, fromAddress?.toString());
+      const signedTxn = await this.tronWeb.trx.sign(unSignedTxn, privateKey);
+      const result = await this.tronWeb.trx.sendRawTransaction(signedTxn);
       return {
         result: result.result,
-        txid: result.txid,
+        txid: result.transaction.txID,
       };
     } catch (error) {
       console.error("Failed to send transaction:", error);
@@ -125,13 +125,13 @@ class TronService {
 
   async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
     try {
-        //@ts-ignore
-      const transactions = await this.tronWeb.Trx.getTransactionsRelated(address, 'all', params);
+        
+      const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', params.limit);
       const transformTransactions = (txs: any[]) =>
         txs.map((tx: any) => ({
           ...tx,
           uniqueId: uuid.v4(),
-          value: this.tronWeb.TronWeb.fromSun(tx.amount), // Convert SUN to TRX
+          value: this.tronWeb.fromSun(tx.amount), // Convert SUN to TRX
           blockTime: tx.block_timestamp,
           direction: tx.from === address ? "sent" : "received",
         }));
@@ -195,9 +195,9 @@ class TronService {
 
   async getBalance(address: string): Promise<string> {
     try {
-        //@ts-ignore
-      const balanceInSun = await this.tronWeb.Trx.getBalance(address);
-      const balance =this.tronWeb.TronWeb.fromSun(balanceInSun)
+        
+      const balanceInSun = await this.tronWeb.trx.getBalance(address);
+      const balance =this.tronWeb.fromSun(balanceInSun)
       if (typeof balance === 'string'){
         return balance;
       }
@@ -211,8 +211,8 @@ class TronService {
 
   async confirmTransaction(txHash: string): Promise<boolean> {
     try {
-        //@ts-ignore
-      const result = await this.tronWeb.Trx.getTransactionInfo(txHash);
+        
+      const result = await this.tronWeb.trx.getTransactionInfo(txHash);
       return result && result.receipt && result.receipt.result === 'SUCCESS';
     } catch (error) {
       console.error("Error confirming Tron transaction:", error);
@@ -222,17 +222,17 @@ class TronService {
   async calculateTransactionFee(from: string, to: string, amount: number): Promise<number> {
     try {
       // Create an unsigned transaction
-      //@ts-ignore
-      const transaction = await this.tronWeb.TransactionBuilder.sendTrx(to, amount, from);
+      
+      const transaction = await this.tronWeb.transactionBuilder.sendTrx(to, amount, from);
       
       // Estimate the energy (CPU) and bandwidth consumption
-      //@ts-ignore
-      const estimatedEnergy = await this.tronWeb.TransactionBuilder.estimateEnergy(transaction);//@ts-ignore
-      const estimatedBandwidth = await this.tronWeb.TransactionBuilder.estimateBandwidth(transaction);
+     
+      const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
+      const estimatedBandwidth = await this.tronWeb.transactionBuilder.estimateBandwidth(transaction);
       
       // Get the current energy and bandwidth prices
-      //@ts-ignore
-      const chainParameters = await this.tronWeb.Trx.getChainParameters();
+      
+      const chainParameters = await this.tronWeb.trx.getChainParameters();
       const energyFee = chainParameters.find((param: any) => param.key === 'getEnergyFee').value;
       const bandwidthFee = chainParameters.find((param: any) => param.key === 'getTransactionFee').value;
 
@@ -240,7 +240,7 @@ class TronService {
       const totalFee = (estimatedEnergy * energyFee) + (estimatedBandwidth * bandwidthFee);
 
       // Convert SUN to TRX
-      const fee= this.tronWeb.TronWeb.fromSun(totalFee);
+      const fee= this.tronWeb.fromSun(totalFee);
       if(typeof fee === 'string'){
 
         return Number(fee);
