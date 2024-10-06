@@ -605,13 +605,12 @@ export default function Index() {
                 />
               </CardView>
               <CardView>
-                ///////
                 <CryptoInfoCard
-                  onPress={() => router.push(ROUTES.solDetails)}
-                  title="Solana"
-                  caption={`${solBalance} SOL`}
+                  onPress={() => router.push(ROUTES.tronDetails)}
+                  title="Tron"
+                  caption={`${tronBalance} TRX`}
                   details={formatDollar(solUsd)}
-                  icon={<SolanaIcon width={25} height={25} fill="#14F195" />}
+                  icon={<TronIcon width={25} height={25} fill="#14F195" />}
                   hideBackground
                 />
               </CardView>

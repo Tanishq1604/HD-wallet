@@ -14,9 +14,11 @@ export interface Routes {
   ethDetails: string;
   solDetails: string;
   neoDetails: string;
+  tronDetails: string;
   sendEth: string;
   sendSol: string;
   sendNeo: string;
+  sendTron: string;
   sendConfirmation: string;
   settings: string;
   camera: string;
@@ -42,9 +44,11 @@ export const ROUTES: Routes = {
   ethDetails: "/token/ethereum",
   solDetails: "/token/solana",
   neoDetails: "/token/neo",
+  tronDetails: "/token/tron",
   sendEth: "/token/send/ethereum",
   sendSol: "/token/send/solana",
   sendNeo: "/token/send/neo",
+  sendTron:"/token/send/tron",
   sendConfirmation: "/token/send/send-confirmation",
   settings: "/(app)/settings/settings-modal",
   camera: "/(app)/camera",
