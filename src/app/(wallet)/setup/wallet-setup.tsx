@@ -140,8 +140,8 @@ export default function WalletSetup() {
       const solWallet = await solanaService.restoreWalletFromPhrase(
         masterMnemonicPhrase
       );
-      const tronWallet = await tronService.restoreWalletFromPhrase(masterMnemonicPhrase);
-      // const tronWallet = await tronService.createWallet();
+      // const tronWallet = await tronService.restoreWalletFromPhrase(masterMnemonicPhrase);
+      const tronWallet = await tronService.createWallet();
 
       const ethereumAccount: AddressState = {
         accountName: "Account 1",

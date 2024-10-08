@@ -44,9 +44,10 @@ class TronService {
   async createWallet(): Promise<ExtendedHDWallet> {
     try {
       const account = await this.tronWeb.createAccount();
-      console.log(account)
+      console.log("this only --",account)
 
       const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
+      console.log("now this onlu ---",address)
       if(address==false){
         throw new Error("Failed to generate Tron address");
       }
@@ -73,13 +74,16 @@ class TronService {
     try {
       
 // <<<<<<< HEAD
-//       const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(mnemonicPhrase);
-//       const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
+      // const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(mnemonicPhrase);
+      // const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
 //       console.log("restoreWalletFromPhrase")
 // =======
+      console.log(mnemonicPhrase)
       const account = this.tronWeb.fromMnemonic(mnemonicPhrase);
-      console.log(account)
+      console.log("olooll",account)
       const address = this.tronWeb.address.fromPrivateKey(account.privateKey);
+      console.log("olfeofhohrooll",address)
+      
       if(address==false){
         throw new Error("Failed to generate Tron address");
       }
@@ -100,7 +104,9 @@ class TronService {
       const path = `m/44'/195'/0'/0/${index}`;
       console.log("createWalletByIndex")
       const account = this.tronWeb.utils.accounts.generateAccountWithMnemonic(phrase, path);
+      console.log("first",account)
       const address = this.tronWeb.utils.address.fromPrivateKey(account.privateKey);
+      console.log("second",address)
       if(address==false){
         throw new Error("Failed to generate Tron address");
       }
@@ -170,27 +176,6 @@ class TronService {
     throw error; // Re-throw the error to be handled by the caller
   }
 }
-  // async fetchTransactions(address: string, params?: AssetTransferParams): Promise<any> {
-  //   try {
-        
-  //     const transactions = await this.tronWeb.trx.getTransactionsRelated(address, 'all', params.limit);
-  //     const transformTransactions = (txs: any[]) =>
-  //       txs.map((tx: any) => ({
-  //         ...tx,
-  //         uniqueId: uuid.v4(),
-  //         value: this.tronWeb.fromSun(tx.amount), // Convert SUN to TRX
-  //         blockTime: tx.block_timestamp,
-  //         direction: tx.from === address ? "sent" : "received",
-  //       }));
-
-  //     const allTransactions = transformTransactions(transactions);
-  //     return {
-  //       transferHistory: allTransactions.sort((a, b) => b.blockTime - a.blockTime),
-  //     };
-  //   } catch (error) {
-  //     console.error("failed to fetch transaction history", error);
-  //   }
-  // }
 
   validateAddress(address: string): boolean {
     return this.tronWeb.utils.address.isAddress(address);
@@ -278,13 +263,7 @@ class TronService {
       const estimatedEnergy = 50000;
       // const estimatedBandwidth = await this.tronWeb.trx.getBandwidth(transaction);
       const estimatedBandwidth = 100;
-// =======
-//       const estimatedEnergy = await this.tronWeb.transactionBuilder.estimateEnergy(transaction);
-//       const estimatedBandwidth = await this.tronWeb.trx.getBandwidth(transaction.raw_data.contract.);
-// >>>>>>> 1bbfcc2 (before pull)
-      
-      // Get the current energy and bandwidth prices
-      
+
       const chainParameters = await this.tronWeb.trx.getChainParameters();
       const energyFee = chainParameters.find((param: any) => param.key === 'getEnergyFee').value;
       const bandwidthFee = chainParameters.find((param: any) => param.key === 'getTransactionFee').value;

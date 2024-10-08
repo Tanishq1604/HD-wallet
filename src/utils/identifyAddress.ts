@@ -7,13 +7,13 @@ export function identifyAddress(address: string) {
   if (ethService.validateAddress(address)) {
     return Chains.Ethereum;
   }
-
-  if (solanaService.validateAddress(address)) {
-    return Chains.Solana;
-  }
+  
   if (tronService.validateAddress(address)) {
     return Chains.Tron;
   }
+  if (solanaService.validateAddress(address)) {
+    return Chains.Solana;
+  }
 
-  return "Unknown";
+  return Chains.Tron;
 }
